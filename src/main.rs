@@ -9,10 +9,10 @@ fn mudnix() -> &'static str {
   "Hello from Mudnix!"
 }
 
-#[get("/hash/<string_to_hash>")]
-fn hash(string_to_hash: &str) -> String {
+#[get("/sha256?<s>")]
+fn hash(s: &str) -> String {
   let mut hasher = Sha256::new();
-  hasher.update(string_to_hash);
+  hasher.update(s);
   let hash = hasher.finalize();
   hex::encode(hash)
 }
@@ -21,6 +21,6 @@ fn hash(string_to_hash: &str) -> String {
 fn rocket() -> _ {
   rocket::build()
     .mount("/", routes![mudnix])
-    .mount("/sha256", routes![hash])
+    .mount("/hash", routes![hash])
     .mount("/", FileServer::from("/home/runner/mudnix/static"))
 }
