@@ -58,7 +58,7 @@ fn hash(s: &str) -> String {
 fn new_user(username: &str, password: &str) -> String {
   let password_hash = hash(password);
   format!(
-    "New user {} with password hash {} (not really)",
+    "New user {} with password hash {} (testing only; no actual user created)",
     username,
     password_hash
   )
