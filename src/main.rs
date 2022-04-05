@@ -1,10 +1,14 @@
 #[macro_use] extern crate rocket;
 extern crate hex;
+use std::fs;
 use rocket::fs::FileServer;
 use sha2::{Sha256, Digest};
 use rocket::http::Header;
 use rocket::{Request, Response};
 use rocket::fairing::{Fairing, Info, Kind};
+use serde_json;
+
+mod entities;
 
 pub struct CORS;
 
@@ -56,12 +60,27 @@ fn hash(s: &str) -> String {
 
 #[post("/new-user?<username>&<password>")]
 fn new_user(username: &str, password: &str) -> String {
-  let password_hash = hash(password);
-  format!(
-    "New user {} with password hash {} (testing only; no actual user created)",
-    username,
-    password_hash
-  )
+  let original_json = fs::read_to_string("/home/runner/mudnix/users.json")
+    .expect("unable to read users.json");
+  let mut user_list: entities::UserList = serde_json::from_str(&original_json).unwrap();
+  if user_list.contains(username) {
+    format!("User {} already exists.", username)
+  } else {
+    let password_hash = hash(password);
+    let user = entities::User::new(
+      username,
+      &password_hash,
+      "nowhere"
+    );
+    user_list.users.push(user);
+    let output_json = serde_json::to_string(&user_list).unwrap();
+    fs::write("/home/runner/mudnix/users.json", output_json)
+      .expect("unable to save user to users.json");
+    format!(
+      "New user {} created. Save your password - it can't be recovered!",
+      username
+    )
+  }
 }
 
 #[launch]

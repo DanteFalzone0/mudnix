@@ -7,5 +7,7 @@
 		pkgs.rust-analyzer
 		pkgs.rustup
 		pkgs.vim
+		pkgs.killall
+		pkgs.htop
 	];
 }
