@@ -1,1 +1,14 @@
-{"users":[]}
+{
+  "users": [
+    {
+      "username": "dante_falzone",
+      "password_hash": "5f910b87aa8c3a2b7eabf3c61f56fbae536af7949e15afd84cc0b67d50d5e909",
+      "world_location": "nowhere"
+    },
+    {
+      "username": "boop",
+      "password_hash": "016c756f0e615ef70ca05eb499a74d31c2ddec7244760d59d792583c0410b36d",
+      "world_location": "nowhere"
+    }
+  ]
+}

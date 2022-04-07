@@ -1,11 +1,13 @@
 #[macro_use] extern crate rocket;
 extern crate hex;
 use std::fs;
+use std::sync::Mutex;
 use rocket::fs::FileServer;
 use sha2::{Sha256, Digest};
 use rocket::http::Header;
 use rocket::{Request, Response};
 use rocket::fairing::{Fairing, Info, Kind};
+use rocket::State;
 use serde_json;
 
 mod entities;
@@ -45,6 +47,10 @@ impl Fairing for CORS {
   }
 }
 
+struct UsersJsonFilePath {
+  pub file_path_mutex: Mutex<String>
+}
+
 #[get("/mudnix")]
 fn mudnix() -> &'static str {
   "Hello from Mudnix!"
@@ -59,10 +65,16 @@ fn hash(s: &str) -> String {
 }
 
 #[post("/new-user?<username>&<password>")]
-fn new_user(username: &str, password: &str) -> String {
-  let original_json = fs::read_to_string("/home/runner/mudnix/users.json")
-    .expect("unable to read users.json");
-  let mut user_list: entities::UserList = serde_json::from_str(&original_json).unwrap();
+fn new_user(
+  username: &str,
+  password: &str,
+  users_file_path_mutex: &State<UsersJsonFilePath>
+) -> String {
+  let users_file_path: &str = &users_file_path_mutex.file_path_mutex
+    .lock().unwrap().to_string();
+  let original_json = fs::read_to_string(users_file_path).unwrap();
+  let mut user_list: entities::UserList = serde_json::from_str(&original_json)
+    .expect("unable to parse json from users.json");
   if user_list.contains(username) {
     format!("User {} already exists.", username)
   } else {
@@ -73,8 +85,8 @@ fn new_user(username: &str, password: &str) -> String {
       "nowhere"
     );
     user_list.users.push(user);
-    let output_json = serde_json::to_string(&user_list).unwrap();
-    fs::write("/home/runner/mudnix/users.json", output_json)
+    let output_json = serde_json::to_string_pretty(&user_list).unwrap();
+    fs::write(users_file_path, output_json)
       .expect("unable to save user to users.json");
     format!(
       "New user {} created. Save your password - it can't be recovered!",
@@ -86,6 +98,9 @@ fn new_user(username: &str, password: &str) -> String {
 #[launch]
 fn rocket() -> _ {
   rocket::build()
+    .manage(UsersJsonFilePath {
+      file_path_mutex: Mutex::new(String::from("/home/runner/mudnix/users.json"))
+    })
     .attach(CORS)
     .mount("/", routes![mudnix])
     .mount("/hash", routes![hash])
