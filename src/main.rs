@@ -78,9 +78,12 @@ fn new_user(
 ) -> String {
   let users_file_path: &str = &users_file_path_mutex.file_path_mutex
     .lock().unwrap().to_string();
+
+  // load the old user data
   let original_json = fs::read_to_string(users_file_path).unwrap();
   let mut user_list: entities::UserList = serde_json::from_str(&original_json)
     .expect("unable to parse json from users.json");
+
   if user_list.contains(username) {
     format!("User {} already exists.", username)
   } else {
@@ -91,9 +94,12 @@ fn new_user(
       "nowhere"
     );
     user_list.users.push(user);
+
+    // save the new user data
     let output_json = serde_json::to_string_pretty(&user_list).unwrap();
     fs::write(users_file_path, output_json)
       .expect("unable to save user to users.json");
+
     format!(
       "New user {} created. Save your password - it can't be recovered!",
       username
@@ -110,15 +116,22 @@ fn login(
 ) -> content::Json<String> {
   let users_file_path: &str = &users_file_path_mutex.file_path_mutex
     .lock().unwrap().to_string();
+
+  // load old user data
   let original_json = fs::read_to_string(users_file_path).unwrap();
   let mut user_list: entities::UserList = serde_json::from_str(&original_json)
     .expect("unable to parse json from users.json");
+
   let password_hash = hash(password);
+
   if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
+    /* add the user to the pool of logged-in users if their credentials are valid
+       and they aren't already in the pool */
     let mut pool = logged_in_user_pool.users_mutex.lock().unwrap();
     let already_logged_in = pool.iter().any(|user|
       user.username == username
     );
+    // update timestamp to reflect the last time they did something
     user_list.users[i].last_activity_timestamp = SystemTime::now()
       .duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
     if !already_logged_in {
@@ -126,9 +139,12 @@ fn login(
         user_list.users[i].clone()
       );
     }
+
+    // save the user list with the updated timestamp
     let output_json = serde_json::to_string_pretty(&user_list).unwrap();
     fs::write(users_file_path, output_json)
       .expect("unable to save user to users.json");
+
     content::Json(serde_json::json!({
       "username": String::from(username),
       "logged_in": true,
