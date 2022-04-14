@@ -153,7 +153,55 @@ fn login(
   } else {
     content::Json(serde_json::json!({
       "username": String::from(username),
-      "logged_in": false
+      "logged_in": false,
+      "err": "invalid credentials"
+    }).to_string())
+  }
+}
+
+#[get("/logout?<username>&<password>")]
+fn logout(
+  username: &str,
+  password: &str,
+  users_file_path_mutex: &State<UsersJsonFilePath>,
+  logged_in_user_pool: &State<LoggedInUserPool>
+) -> content::Json<String> {
+  let users_file_path: &str = &users_file_path_mutex.file_path_mutex
+    .lock().unwrap().to_string();
+
+  // load old user data
+  let original_json = fs::read_to_string(users_file_path).unwrap();
+  let mut user_list: entities::UserList = serde_json::from_str(&original_json)
+    .expect("unable to parse json from users.json");
+
+  let password_hash = hash(password);
+
+  if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
+    /* remove the user from the pool of logged-in users if their credentials
+      are valid and they are in the pool */
+    let mut pool = logged_in_user_pool.users_mutex.lock().unwrap();
+
+    // update timestamp to reflect the last time they did something
+    user_list.users[i].last_activity_timestamp = SystemTime::now()
+      .duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+    if let Some(j) = pool.iter().position(|user| user.username == username) {
+      pool.swap_remove(j);
+    }
+
+    // save the user list with the updated timestamp
+    let output_json = serde_json::to_string_pretty(&user_list).unwrap();
+    fs::write(users_file_path, output_json)
+      .expect("unable to save user to users.json");
+
+    content::Json(serde_json::json!({
+      "username": String::from(username),
+      "logged_out": true
+    }).to_string())
+  } else {
+    content::Json(serde_json::json!({
+      "username": String::from(username),
+      "logged_out": false,
+      "err": "invalid credentials"
     }).to_string())
   }
 }
@@ -172,5 +220,6 @@ fn rocket() -> _ {
     .mount("/hash", routes![hash])
     .mount("/user", routes![new_user])
     .mount("/user", routes![login])
+    .mount("/user", routes![logout])
     .mount("/", FileServer::from("/home/runner/mudnix/static"))
 }
