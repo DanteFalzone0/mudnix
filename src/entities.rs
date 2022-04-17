@@ -1,5 +1,7 @@
 use std::time::SystemTime;
+use std::fs;
 use serde::{Serialize, Deserialize};
+use serde_json;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct User {
@@ -27,6 +29,12 @@ pub struct UserList {
 }
 
 impl UserList {
+  pub fn new() -> Self {
+    Self {
+      users: vec![]
+    }
+  }
+
   pub fn contains(&self, username: &str) -> bool {
     self.users.iter().any(|user| user.username == username)
   }
@@ -39,5 +47,27 @@ impl UserList {
     self.users.iter().position(|user|
       user.username == username && user.password_hash == password_hash 
     )
+  }
+
+  pub fn update_timestamp_of_index(&mut self, i: usize) {
+    self.users[i].last_activity_timestamp = SystemTime::now()
+      .duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+  }
+
+  pub fn from_file(file_path: &str) -> Self {
+    let original_json = fs::read_to_string(file_path).unwrap();
+    serde_json::from_str(&original_json).expect("unable to parse json from users.json")
+  }
+
+  pub fn save_to_file(&self, output_file_path: &str) {
+    let output_json = serde_json::to_string_pretty(self).unwrap();
+    fs::write(output_file_path, output_json)
+      .expect("unable to save user to users.json");
+  }
+
+  pub fn remove_user_if_exists(&mut self, username: &str) {
+    if let Some(i) = self.users.iter().position(|user| user.username == username) {
+      self.users.swap_remove(i);
+    }
   }
 }
