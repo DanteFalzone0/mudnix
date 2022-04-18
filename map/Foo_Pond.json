@@ -12,12 +12,12 @@
     },
     "places": [
       {
-        "name": "Waters",
+        "name": "waters",
         "t": "freshwater_body",
         "active_users": []
       },
       {
-        "name": "Shore",
+        "name": "shore",
         "t": "beach",
         "active_users": []
       }

@@ -12,22 +12,22 @@
     },
     "places": [
       {
-        "name": "Northern_Region",
+        "name": "northern_region",
         "t": "field",
         "active_users": []
       },
       {
-        "name": "Southern_Region",
+        "name": "southern_region",
         "t": "field",
         "active_users": []
       },
       {
-        "name": "Eastern_Region",
+        "name": "eastern_region",
         "t": "field",
         "active_users": []
       },
       {
-        "name": "Western_Region",
+        "name": "western_region",
         "t": "field",
         "active_users": []
       }
