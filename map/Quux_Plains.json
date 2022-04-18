@@ -1,0 +1,36 @@
+{
+  "name": "Quux_Plains",
+  "attrs": {
+    "neighbors": [
+      "Foo_Pond"
+    ],
+    "active_users": [],
+    "treasure_chest_spawn_rate": 0.15,
+    "biome": {
+      "eco": "plains",
+      "urban": false
+    },
+    "places": [
+      {
+        "name": "Northern_Region",
+        "t": "field",
+        "active_users": []
+      },
+      {
+        "name": "Southern_Region",
+        "t": "field",
+        "active_users": []
+      },
+      {
+        "name": "Eastern_Region",
+        "t": "field",
+        "active_users": []
+      },
+      {
+        "name": "Western_Region",
+        "t": "field",
+        "active_users": []
+      }
+    ]
+  }
+}

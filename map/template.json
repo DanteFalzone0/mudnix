@@ -1,0 +1,19 @@
+{
+  "name": "template",
+  "attrs": {
+    "neighbors": [],
+    "active_users": [],
+    "treasure_chest_spawn_rate": 1.0,
+    "biome": {
+      "eco": "ecosystem",
+      "urban": false
+    },
+    "places": [
+      {
+        "name": "place",
+        "t": "type_of_place",
+        "active_users": []
+      }
+    ]
+  }
+}

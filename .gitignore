@@ -1,3 +1,4 @@
 setup.sh
 target/
 Cargo.lock
+.config/

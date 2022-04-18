@@ -3,25 +3,25 @@
     {
       "username": "dante_falzone",
       "password_hash": "5f910b87aa8c3a2b7eabf3c61f56fbae536af7949e15afd84cc0b67d50d5e909",
-      "world_location": "nowhere",
-      "last_activity_timestamp": 1650228974
+      "world_location": "Quux_Plains::Northern_Region",
+      "last_activity_timestamp": 1650263385
     },
     {
       "username": "boop",
       "password_hash": "016c756f0e615ef70ca05eb499a74d31c2ddec7244760d59d792583c0410b36d",
-      "world_location": "nowhere",
-      "last_activity_timestamp": 1650172842
+      "world_location": "Quux_Plains::Northern_Region",
+      "last_activity_timestamp": 1650258599
     },
     {
       "username": "ljhbee212",
       "password_hash": "526cb07530d18ceebea03bbad95896cabd47d44a276c89a1bb6e63835167d999",
-      "world_location": "nowhere",
-      "last_activity_timestamp": 1
+      "world_location": "Quux_Plains::Northern_Region",
+      "last_activity_timestamp": 1650258585
     },
     {
       "username": "ally-cat",
       "password_hash": "a1480c7f8829e28137a15f1e9e8896a46053f1a429053f89459d6a4b2d644115",
-      "world_location": "nowhere",
+      "world_location": "Quux_Plains::Northern_Region",
       "last_activity_timestamp": 1
     }
   ]

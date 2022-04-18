@@ -56,13 +56,13 @@ impl UserList {
 
   pub fn from_file(file_path: &str) -> Self {
     let original_json = fs::read_to_string(file_path).unwrap();
-    serde_json::from_str(&original_json).expect("unable to parse json from users.json")
+    serde_json::from_str(&original_json).expect("unable to parse json")
   }
 
   pub fn save_to_file(&self, output_file_path: &str) {
     let output_json = serde_json::to_string_pretty(self).unwrap();
     fs::write(output_file_path, output_json)
-      .expect("unable to save user to users.json");
+      .expect("unable to save user");
   }
 
   pub fn remove_user_if_exists(&mut self, username: &str) {

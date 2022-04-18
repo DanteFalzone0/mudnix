@@ -11,10 +11,11 @@ use rocket::response::content;
 use serde_json;
 
 mod entities;
-
-pub struct CORS;
+mod world_map;
+mod mudnix_utils;
 
 // https://stackoverflow.com/a/69342225/10942736
+pub struct CORS;
 #[rocket::async_trait]
 impl Fairing for CORS {
   fn info(&self) -> Info {
@@ -47,9 +48,7 @@ impl Fairing for CORS {
   }
 }
 
-struct UsersJsonFilePath {
-  pub file_path_mutex: Mutex<String>
-}
+type UsersFileMutex = mudnix_utils::FilePathMutex;
 
 struct LoggedInUserPool {
   pub user_list_mutex: Mutex<entities::UserList>
@@ -72,9 +71,9 @@ fn hash(s: &str) -> String {
 fn new_user(
   username: &str,
   password: &str,
-  users_file_path_mutex: &State<UsersJsonFilePath>
+  users_file_path_mutex: &State<UsersFileMutex>
 ) -> String {
-  let users_file_path: &str = &users_file_path_mutex.file_path_mutex
+  let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
   let mut user_list = entities::UserList::from_file(users_file_path);
 
@@ -101,10 +100,10 @@ fn new_user(
 fn login(
   username: &str,
   password: &str,
-  users_file_path_mutex: &State<UsersJsonFilePath>,
+  users_file_path_mutex: &State<UsersFileMutex>,
   logged_in_user_pool: &State<LoggedInUserPool>
 ) -> content::Json<String> {
-  let users_file_path: &str = &users_file_path_mutex.file_path_mutex
+  let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
   let mut user_list = entities::UserList::from_file(users_file_path);
 
@@ -126,9 +125,21 @@ fn login(
     // save the user list with the updated timestamp
     user_list.save_to_file(users_file_path);
 
+    // place the user in the appropriate location
+    let world_loc_path = world_map::get_path_from_location(
+      &user_list.users[i].world_location
+    );
+    let mut world_loc = world_map::WorldLocation::from_file(&world_loc_path);
+    let response = world_loc.move_user_to_self(
+      username,
+      &user_list.users[i].world_location
+    );
+    world_loc.save_to_file(&world_loc_path);
+
     content::Json(serde_json::json!({
       "username": String::from(username),
       "logged_in": true,
+      "info": response,
       "was_previously_logged_in": already_logged_in
     }).to_string())
   } else {
@@ -144,10 +155,10 @@ fn login(
 fn logout(
   username: &str,
   password: &str,
-  users_file_path_mutex: &State<UsersJsonFilePath>,
+  users_file_path_mutex: &State<UsersFileMutex>,
   logged_in_user_pool: &State<LoggedInUserPool>
 ) -> content::Json<String> {
-  let users_file_path: &str = &users_file_path_mutex.file_path_mutex
+  let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
   let mut user_list = entities::UserList::from_file(users_file_path);
 
@@ -157,6 +168,14 @@ fn logout(
     /* remove the user from the pool of logged-in users if their credentials
        are valid and they are in the pool */
     let mut pool = logged_in_user_pool.user_list_mutex.lock().unwrap();
+
+    // remove the user from the world
+    let world_loc_path = world_map::get_path_from_location(
+      &user_list.users[i].world_location
+    );
+    let mut world_loc = world_map::WorldLocation::from_file(&world_loc_path);
+    world_loc.remove_user(username);
+    world_loc.save_to_file(&world_loc_path);
 
     user_list.update_timestamp_of_index(i);
     pool.remove_user_if_exists(username);
@@ -175,11 +194,44 @@ fn logout(
   }
 }
 
+#[get("/move?<username>&<password>&<dest_location>")]
+fn move_user(
+  username: &str,
+  password: &str,
+  dest_location: &str,
+  users_file_path_mutex: &State<UsersFileMutex>
+) -> content::Json<String> {
+  let users_file_path: &str = &users_file_path_mutex.mutex
+    .lock().unwrap().to_string();
+  let mut user_list = entities::UserList::from_file(users_file_path);
+
+  let password_hash = hash(password);
+
+  if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
+    let old_location: &str = &user_list.users[i].world_location;
+    let mut current_loc = world_map::WorldLocation::from_location(old_location);
+    let response = current_loc.move_user_from(username, old_location).to(dest_location);
+    user_list.users[i].world_location = String::from(dest_location);
+    user_list.save_to_file(users_file_path);
+    content::Json(serde_json::json!({
+      "username": String::from(username),
+      "succeeded": true,
+      "info": response
+    }).to_string())
+  } else {
+    content::Json(serde_json::json!({
+      "username": String::from(username),
+      "succeeded": false,
+      "err": "invalid credentials"
+    }).to_string())
+  }
+}
+
 #[launch]
 fn rocket() -> _ {
   rocket::build()
-    .manage(UsersJsonFilePath {
-      file_path_mutex: Mutex::new(String::from("/home/runner/mudnix/users.json"))
+    .manage(UsersFileMutex {
+      mutex: Mutex::new(String::from("/home/runner/mudnix/users.json"))
     })
     .manage(LoggedInUserPool {
       user_list_mutex: Mutex::new(entities::UserList::new())
@@ -190,5 +242,6 @@ fn rocket() -> _ {
     .mount("/user", routes![new_user])
     .mount("/user", routes![login])
     .mount("/user", routes![logout])
+    .mount("/game", routes![move_user])
     .mount("/", FileServer::from("/home/runner/mudnix/static"))
 }

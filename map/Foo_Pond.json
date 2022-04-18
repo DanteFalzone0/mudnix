@@ -1,0 +1,26 @@
+{
+  "name": "Foo_Pond",
+  "attrs": {
+    "neighbors": [
+      "Quux_Plains"
+    ],
+    "active_users": [],
+    "treasure_chest_spawn_rate": 0.0,
+    "biome": {
+      "eco": "plains",
+      "urban": false
+    },
+    "places": [
+      {
+        "name": "Waters",
+        "t": "freshwater_body",
+        "active_users": []
+      },
+      {
+        "name": "Shore",
+        "t": "beach",
+        "active_users": []
+      }
+    ]
+  }
+}
