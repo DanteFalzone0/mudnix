@@ -1,4 +1,5 @@
 use std::fs;
+use std::io;
 use serde::{Serialize, Deserialize};
 use serde_json;
 
@@ -30,27 +31,33 @@ pub struct WorldLocation {
   pub attrs: WorldLocationAttrs
 }
 
-// returned by WordLocation::move_user_from
+// returned by WorldLocation::move_user_from
 pub struct MovementResult {
   username: String
 }
 
 impl MovementResult {
-  pub fn to(&self, dest_location: &str) -> String {
-    let mut dest = WorldLocation::from_location(dest_location);
+  pub fn to(&self, dest_location: &str) -> Result<String, io::Error> {
+    let mut dest = match WorldLocation::from_location(dest_location) {
+      Ok(dwl) => dwl,
+      Err(e) => return Err(e)
+    };
     let result = dest.move_user_to_self(&self.username, dest_location);
     dest.save_to_file(&get_path_from_location(dest_location));
-    result
+    Ok(result)
   }
 }
 
 impl WorldLocation {
-  pub fn from_file(file_path: &str) -> Self {
-    let original_json = fs::read_to_string(file_path).unwrap();
-    serde_json::from_str(&original_json).expect("unable to parse json")
+  pub fn from_file(file_path: &str) -> Result<Self, io::Error> {
+    let original_json = match fs::read_to_string(file_path) {
+      Ok(file_contents) => file_contents,
+      Err(e) => return Err(e)
+    };
+    Ok(serde_json::from_str(&original_json).expect("unable to parse json"))
   }
 
-  pub fn from_location(location: &str) -> Self {
+  pub fn from_location(location: &str) -> Result<Self, io::Error> {
     Self::from_file(&get_path_from_location(location))
   }
 

@@ -54,6 +54,11 @@ struct LoggedInUserPool {
   pub user_list_mutex: Mutex<entities::UserList>
 }
 
+#[get("/version")]
+fn version() -> String {
+  env!("CARGO_PKG_VERSION").to_string()
+}
+
 #[get("/mudnix")]
 fn mudnix() -> &'static str {
   "Hello from Mudnix!"
@@ -129,7 +134,17 @@ fn login(
     let world_loc_path = world_map::get_path_from_location(
       &user_list.users[i].world_location
     );
-    let mut world_loc = world_map::WorldLocation::from_file(&world_loc_path);
+    let mut world_loc = match world_map::WorldLocation::from_file(&world_loc_path) {
+      Ok(world_location) => world_location,
+      Err(_) => return content::Json(serde_json::json!({
+        "username": String::from(username),
+        "logged_in": false,
+        "err": format!(
+          "nonexistent location {} found in user save file when attempting to log in",
+          &user_list.users[i].world_location
+        )
+      }).to_string())
+    };
     let response = world_loc.move_user_to_self(
       username,
       &user_list.users[i].world_location
@@ -173,7 +188,17 @@ fn logout(
     let world_loc_path = world_map::get_path_from_location(
       &user_list.users[i].world_location
     );
-    let mut world_loc = world_map::WorldLocation::from_file(&world_loc_path);
+    let mut world_loc = match world_map::WorldLocation::from_file(&world_loc_path) {
+      Ok(world_location) => world_location,
+      Err(_) => return content::Json(serde_json::json!({
+        "username": String::from(username),
+        "logged_out": false,
+        "err": format!(
+          "nonexistent location {} found in user save file when attempting to log out",
+          &user_list.users[i].world_location
+        )
+      }).to_string())
+    };
     world_loc.remove_user(username);
     world_loc.save_to_file(&world_loc_path);
 
@@ -209,8 +234,22 @@ fn move_user(
 
   if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
     let old_location: &str = &user_list.users[i].world_location;
-    let mut current_loc = world_map::WorldLocation::from_location(old_location);
-    let response = current_loc.move_user_from(username, old_location).to(dest_location);
+    let mut current_loc = match world_map::WorldLocation::from_location(old_location) {
+      Ok(current_location) => current_location,
+      Err(_) => return content::Json(serde_json::json!({
+        "username": String::from(username),
+        "succeeded": false,
+        "err": format!("cannot move you from invalid location {}", old_location)
+      }).to_string())
+    };
+    let response = match current_loc.move_user_from(username, old_location).to(dest_location) {
+      Ok(r) => r,
+      Err(_) => return content::Json(serde_json::json!({
+        "username": String::from(username),
+        "succeeded": false,
+        "err": format!("cannot move you to invalid location {}", dest_location)
+      }).to_string())
+    };
     user_list.users[i].world_location = String::from(dest_location);
     user_list.save_to_file(users_file_path);
     content::Json(serde_json::json!({
@@ -238,6 +277,7 @@ fn rocket() -> _ {
     })
     .attach(CORS)
     .mount("/", routes![mudnix])
+    .mount("/", routes![version])
     .mount("/hash", routes![hash])
     .mount("/user", routes![new_user])
     .mount("/user", routes![login])
