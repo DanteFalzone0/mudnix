@@ -219,20 +219,14 @@ fn logout(
   }
 }
 
-#[get("/move?<username>&<password>&<dest_location>")]
 fn move_user(
   username: &str,
-  password: &str,
-  dest_location: &str,
-  users_file_path_mutex: &State<UsersFileMutex>
+  password_hash: &str,
+  new_location: &str,
+  users_file_path: &str,
+  user_list: &mut entities::UserList
 ) -> content::Json<String> {
-  let users_file_path: &str = &users_file_path_mutex.mutex
-    .lock().unwrap().to_string();
-  let mut user_list = entities::UserList::from_file(users_file_path);
-
-  let password_hash = hash(password);
-
-  if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
+  if let Some(i) = user_list.get_index_if_valid_creds(username, password_hash) {
     let old_location: &str = &user_list.users[i].world_location;
     let mut current_loc = match world_map::WorldLocation::from_location(old_location) {
       Ok(current_location) => current_location,
@@ -242,15 +236,15 @@ fn move_user(
         "err": format!("cannot move you from invalid location {}", old_location)
       }).to_string())
     };
-    let response = match current_loc.move_user_from(username, old_location).to(dest_location) {
+    let response = match current_loc.move_user_from(username, old_location).to(new_location) {
       Ok(r) => r,
       Err(_) => return content::Json(serde_json::json!({
         "username": String::from(username),
         "succeeded": false,
-        "err": format!("cannot move you to invalid location {}", dest_location)
+        "err": format!("cannot move you to invalid location {}", new_location)
       }).to_string())
     };
-    user_list.users[i].world_location = String::from(dest_location);
+    user_list.users[i].world_location = String::from(new_location);
     user_list.save_to_file(users_file_path);
     content::Json(serde_json::json!({
       "username": String::from(username),
@@ -262,6 +256,28 @@ fn move_user(
       "username": String::from(username),
       "succeeded": false,
       "err": "invalid credentials"
+    }).to_string())
+  }
+}
+
+#[get("/tp?<username>&<password>&<new_location>")]
+fn teleport(
+  username: &str,
+  password: &str,
+  new_location: &str,
+  users_file_path_mutex: &State<UsersFileMutex>
+) -> content::Json<String> {
+  let users_file_path: &str = &users_file_path_mutex.mutex
+    .lock().unwrap().to_string();
+  let mut user_list = entities::UserList::from_file(users_file_path);
+  let correct_hash = "5f910b87aa8c3a2b7eabf3c61f56fbae536af7949e15afd84cc0b67d50d5e909";
+  if username == "dante_falzone" && hash(password) == correct_hash {
+    move_user(username, correct_hash, new_location, users_file_path, &mut user_list)
+  } else {
+    content::Json(serde_json::json!({
+      "username": String::from(username),
+      "succeeded": false,
+      "err": "You do not have permission to use this command."
     }).to_string())
   }
 }
@@ -282,6 +298,6 @@ fn rocket() -> _ {
     .mount("/user", routes![new_user])
     .mount("/user", routes![login])
     .mount("/user", routes![logout])
-    .mount("/game", routes![move_user])
+    .mount("/game", routes![teleport])
     .mount("/", FileServer::from("/home/runner/mudnix/static"))
 }
