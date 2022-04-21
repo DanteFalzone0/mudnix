@@ -5,21 +5,24 @@
       "Quux_Plains"
     ],
     "active_users": [],
+    "npcs": [],
     "treasure_chest_spawn_rate": 0.0,
     "biome": {
       "eco": "plains",
       "urban": false
     },
-    "places": [
+    "sublocations": [
       {
         "name": "waters",
         "t": "freshwater_body",
-        "active_users": []
+        "active_users": [],
+        "npcs": []
       },
       {
         "name": "shore",
         "t": "beach",
-        "active_users": []
+        "active_users": [],
+        "npcs": []
       }
     ]
   }

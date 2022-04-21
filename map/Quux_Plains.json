@@ -5,31 +5,36 @@
       "Foo_Pond"
     ],
     "active_users": [],
+    "npcs": [],
     "treasure_chest_spawn_rate": 0.15,
     "biome": {
       "eco": "plains",
       "urban": false
     },
-    "places": [
+    "sublocations": [
       {
         "name": "northern_region",
         "t": "field",
-        "active_users": []
+        "active_users": [],
+        "npcs": []
       },
       {
         "name": "southern_region",
         "t": "field",
-        "active_users": []
+        "active_users": [],
+        "npcs": []
       },
       {
         "name": "eastern_region",
         "t": "field",
-        "active_users": []
+        "active_users": [],
+        "npcs": []
       },
       {
         "name": "western_region",
         "t": "field",
-        "active_users": []
+        "active_users": [],
+        "npcs": []
       }
     ]
   }

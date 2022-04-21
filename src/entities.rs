@@ -71,3 +71,9 @@ impl UserList {
     }
   }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct Npc {
+  pub name: String,
+  // TODO finish implementation
+}

@@ -89,7 +89,7 @@ fn new_user(
     let user = entities::User::new(
       username,
       &password_hash,
-      "nowhere"
+      "Quux_Plains::northern_region"
     );
     user_list.users.push(user);
     user_list.save_to_file(users_file_path);

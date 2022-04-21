@@ -3,16 +3,18 @@
   "attrs": {
     "neighbors": [],
     "active_users": [],
+    "npcs": [],
     "treasure_chest_spawn_rate": 1.0,
     "biome": {
       "eco": "ecosystem",
       "urban": false
     },
-    "places": [
+    "sublocations": [
       {
-        "name": "place",
-        "t": "type_of_place",
-        "active_users": []
+        "name": "sublocation",
+        "t": "type_of_sublocation",
+        "active_users": [],
+        "npcs": []
       }
     ]
   }

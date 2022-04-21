@@ -2,6 +2,7 @@ use std::fs;
 use std::io;
 use serde::{Serialize, Deserialize};
 use serde_json;
+use crate::entities;
 
 #[derive(Serialize, Deserialize)]
 pub struct Biome {
@@ -10,19 +11,21 @@ pub struct Biome {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Place {
+pub struct SubLocation {
   pub name: String,
   pub t: String,
-  pub active_users: Vec<String>
+  pub active_users: Vec<String>,
+  pub npcs: Vec<entities::Npc>
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct WorldLocationAttrs {
   pub neighbors: Vec<String>,
   pub active_users: Vec<String>,
+  pub npcs: Vec<entities::Npc>,
   pub treasure_chest_spawn_rate: f32,
   pub biome: Biome,
-  pub places: Vec<Place>
+  pub sublocations: Vec<SubLocation>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -75,9 +78,9 @@ impl WorldLocation {
       }
       format!("You are at {}.", location.replace("_", " "))
     } else {
-      if let Some(i) = self.attrs.places.iter().position(|p| p.name == loc_parts[1]) {
-        if !self.attrs.places[i].active_users.iter().any(|user| user == username) {
-          self.attrs.places[i].active_users.push(String::from(username));
+      if let Some(i) = self.attrs.sublocations.iter().position(|p| p.name == loc_parts[1]) {
+        if !self.attrs.sublocations[i].active_users.iter().any(|user| user == username) {
+          self.attrs.sublocations[i].active_users.push(String::from(username));
         }
         format!(
           "You are at the {} of {}.",
@@ -86,7 +89,7 @@ impl WorldLocation {
         )
       } else {
         format!(
-          "{}: no such place in {}",
+          "{}: no such sublocation in {}",
           loc_parts[1].replace("_", " "),
           loc_parts[0].replace("_", " ")
         )
@@ -98,9 +101,9 @@ impl WorldLocation {
     if let Some(i) = self.attrs.active_users.iter().position(|user| user == username) {
       self.attrs.active_users.swap_remove(i);
     } else {
-      for place in self.attrs.places.iter_mut() {
-        if let Some(i) = place.active_users.iter().position(|user| user == username) {
-          place.active_users.swap_remove(i);
+      for sublocation in self.attrs.sublocations.iter_mut() {
+        if let Some(i) = sublocation.active_users.iter().position(|user| user == username) {
+          sublocation.active_users.swap_remove(i);
           break;
         }
       }
