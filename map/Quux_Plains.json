@@ -21,9 +21,7 @@
       {
         "name": "southern_region",
         "t": "field",
-        "active_users": [
-          "dante_falzone"
-        ],
+        "active_users": [],
         "npcs": []
       },
       {

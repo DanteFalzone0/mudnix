@@ -309,7 +309,7 @@ fn goto(
         )
       }).to_string())
     };
-    if old_location.is_neighbor(new_location_id) {
+    if old_location_id == new_location_id || old_location.is_neighbor(new_location_id) {
       let response = match old_location.move_user_from(
         username, old_location_id
       ).to(new_location_id) {
@@ -332,7 +332,11 @@ fn goto(
       content::Json(serde_json::json!({
         "username": String::from(username),
         "succeeded": false,
-        "err": format!("you cannot go from {} directly to {}", old_location_id, new_location_id)
+        "err": format!(
+          "{} is not next to {}",
+          world_map::location_id_to_human_readable(old_location_id),
+          world_map::location_id_to_human_readable(new_location_id)
+        )
       }).to_string())
     }
   } else {
