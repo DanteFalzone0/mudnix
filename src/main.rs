@@ -131,7 +131,7 @@ fn login(
     user_list.save_to_file(users_file_path);
 
     // place the user in the appropriate location
-    let world_loc_path = world_map::get_path_from_location(
+    let world_loc_path = world_map::get_path_from_location_id(
       &user_list.users[i].world_location
     );
     let mut world_loc = match world_map::WorldLocation::from_file(&world_loc_path) {
@@ -185,7 +185,7 @@ fn logout(
     let mut pool = logged_in_user_pool.user_list_mutex.lock().unwrap();
 
     // remove the user from the world
-    let world_loc_path = world_map::get_path_from_location(
+    let world_loc_path = world_map::get_path_from_location_id(
       &user_list.users[i].world_location
     );
     let mut world_loc = match world_map::WorldLocation::from_file(&world_loc_path) {
@@ -222,29 +222,31 @@ fn logout(
 fn move_user(
   username: &str,
   password_hash: &str,
-  new_location: &str,
+  new_location_id: &str,
   users_file_path: &str,
   user_list: &mut entities::UserList
 ) -> content::Json<String> {
   if let Some(i) = user_list.get_index_if_valid_creds(username, password_hash) {
-    let old_location: &str = &user_list.users[i].world_location;
-    let mut current_loc = match world_map::WorldLocation::from_location(old_location) {
+    let old_location_id: &str = &user_list.users[i].world_location;
+    let mut old_location = match world_map::WorldLocation::from_location_id(old_location_id) {
       Ok(current_location) => current_location,
       Err(_) => return content::Json(serde_json::json!({
         "username": String::from(username),
         "succeeded": false,
-        "err": format!("cannot move you from invalid location {}", old_location)
+        "err": format!("cannot move you from invalid location {}", old_location_id)
       }).to_string())
     };
-    let response = match current_loc.move_user_from(username, old_location).to(new_location) {
+    let response = match old_location.move_user_from(
+      username, old_location_id
+    ).to(new_location_id) {
       Ok(r) => r,
       Err(_) => return content::Json(serde_json::json!({
         "username": String::from(username),
         "succeeded": false,
-        "err": format!("cannot move you to invalid location {}", new_location)
+        "err": format!("cannot move you to invalid location {}", new_location_id)
       }).to_string())
     };
-    user_list.users[i].world_location = String::from(new_location);
+    user_list.users[i].world_location = String::from(new_location_id);
     user_list.save_to_file(users_file_path);
     content::Json(serde_json::json!({
       "username": String::from(username),
@@ -281,6 +283,48 @@ fn teleport(
     }).to_string())
   }
 }
+
+// #[get("/goto?<username>&<password>&<new_location>")]
+// fn goto(
+//   username: &str,
+//   password: &str,
+//   new_location: &str,
+//   users_file_path_mutex: &State<UsersFileMutex>
+// ) -> content::Json<String> {
+//   let users_file_path: &str = &users_file_path_mutex.mutex
+//     .lock().unwrap().to_string();
+//   let mut user_list = entities::UserList::from_file(users_file_path);
+//   let password_hash = hash(password);
+//   if let Some(i) = user_list.get_index_if_valid_creds(username, password_hash) {
+//     let old_location_id: &str = &user_list.users[i].world_location;
+//     let mut old_location = match world_map::WorldLocation::from_location(old_location_id) {
+//       Ok(current_location) => current_location,
+//       Err(_) => return content::Json(serde_json::json!({
+//         "username": String::from(username),
+//         "succeeded": false,
+//         "err": format!(
+//           "cannot move you from invalid location \"{}\"",
+//           old_location_id
+//         )
+//       }).to_string())
+//     };
+//     if old_loc.is_neighbor(new_location) {
+      
+//     } else {
+//       content::Json(serde_json::json!({
+//         "username": String::from(username),
+//         "succeeded": false,
+//         "err": format!("you cannot go from {} directly to {}", current_location, new_location)
+//       }).to_string())
+//     }
+//   } else {
+//     content::Json(serde_json::json!({
+//       "username": String::from(username),
+//       "succeeded": false,
+//       "err": "invalid credentials"
+//     }).to_string())
+//   }
+// }
 
 #[launch]
 fn rocket() -> _ {

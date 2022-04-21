@@ -40,13 +40,13 @@ pub struct MovementResult {
 }
 
 impl MovementResult {
-  pub fn to(&self, dest_location: &str) -> Result<String, io::Error> {
-    let mut dest = match WorldLocation::from_location(dest_location) {
+  pub fn to(&self, dest_location_id: &str) -> Result<String, io::Error> {
+    let mut dest = match WorldLocation::from_location_id(dest_location_id) {
       Ok(dwl) => dwl,
       Err(e) => return Err(e)
     };
-    let result = dest.move_user_to_self(&self.username, dest_location);
-    dest.save_to_file(&get_path_from_location(dest_location));
+    let result = dest.move_user_to_self(&self.username, dest_location_id);
+    dest.save_to_file(&get_path_from_location_id(dest_location_id));
     Ok(result)
   }
 }
@@ -60,8 +60,8 @@ impl WorldLocation {
     Ok(serde_json::from_str(&original_json).expect("unable to parse json"))
   }
 
-  pub fn from_location(location: &str) -> Result<Self, io::Error> {
-    Self::from_file(&get_path_from_location(location))
+  pub fn from_location_id(location_id: &str) -> Result<Self, io::Error> {
+    Self::from_file(&get_path_from_location_id(location_id))
   }
 
   pub fn save_to_file(&self, output_file_path: &str) {
@@ -70,13 +70,13 @@ impl WorldLocation {
       .expect("unable to save world location");
   }
 
-  pub fn move_user_to_self(&mut self, username: &str, location: &str) -> String {
-    let loc_parts: Vec<&str> = location.split("::").collect();
+  pub fn move_user_to_self(&mut self, username: &str, location_id: &str) -> String {
+    let loc_parts: Vec<&str> = location_id.split("::").collect();
     if loc_parts.len() == 1 {
       if !self.attrs.active_users.iter().any(|user| user == username) {
         self.attrs.active_users.push(String::from(username));
       }
-      format!("You are at {}.", location.replace("_", " "))
+      format!("You are at {}.", location_id.replace("_", " "))
     } else {
       if let Some(i) = self.attrs.sublocations.iter().position(|p| p.name == loc_parts[1]) {
         if !self.attrs.sublocations[i].active_users.iter().any(|user| user == username) {
@@ -112,12 +112,17 @@ impl WorldLocation {
 
   pub fn move_user_from(&mut self, username: &str, src_location: &str) -> MovementResult {
     self.remove_user(username);
-    self.save_to_file(&get_path_from_location(src_location));
+    self.save_to_file(&get_path_from_location_id(src_location));
     MovementResult { username: String::from(username) }
+  }
+
+  pub fn is_neighbor(&self, location_id: &str) -> bool {
+    let parts: Vec<&str> = location_id.split("::").collect();
+    self.attrs.neighbors.iter().any(|neighbor| neighbor == parts[0])
   }
 }
 
-pub fn get_path_from_location(location: &str) -> String {
-  let parts: Vec<&str> = location.split("::").collect();
+pub fn get_path_from_location_id(location_id: &str) -> String {
+  let parts: Vec<&str> = location_id.split("::").collect();
   format!("/home/runner/mudnix/map/{}.json", parts[0])
 }
