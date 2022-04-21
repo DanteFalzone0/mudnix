@@ -1,6 +1,6 @@
 [package]
 name = "mudnix"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["Dante J Falzone"]
 edition = "2021"
 

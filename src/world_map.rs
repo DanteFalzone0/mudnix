@@ -83,9 +83,8 @@ impl WorldLocation {
           self.attrs.sublocations[i].active_users.push(String::from(username));
         }
         format!(
-          "You are at the {} of {}.",
-          loc_parts[1].replace("_", " "),
-          loc_parts[0].replace("_", " ")
+          "You are at {}.",
+          location_id_to_human_readable(location_id)
         )
       } else {
         format!(
@@ -117,12 +116,25 @@ impl WorldLocation {
   }
 
   pub fn is_neighbor(&self, location_id: &str) -> bool {
-    let parts: Vec<&str> = location_id.split("::").collect();
-    self.attrs.neighbors.iter().any(|neighbor| neighbor == parts[0])
+    let loc_parts: Vec<&str> = location_id.split("::").collect();
+    self.attrs.neighbors.iter().any(|neighbor| neighbor == loc_parts[0])
   }
 }
 
 pub fn get_path_from_location_id(location_id: &str) -> String {
-  let parts: Vec<&str> = location_id.split("::").collect();
-  format!("/home/runner/mudnix/map/{}.json", parts[0])
+  let loc_parts: Vec<&str> = location_id.split("::").collect();
+  format!("/home/runner/mudnix/map/{}.json", loc_parts[0])
+}
+
+pub fn location_id_to_human_readable(location_id: &str) -> String {
+  let loc_parts: Vec<&str> = location_id.split("::").collect();
+  if loc_parts.len() == 1 {
+    String::from(loc_parts[0].replace("_", " "))
+  } else {
+    format!(
+      "the {} of {}",
+      loc_parts[1].replace("_", " "),
+      loc_parts[0].replace("_", " ")
+    )
+  }
 }
