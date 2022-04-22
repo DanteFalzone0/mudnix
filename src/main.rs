@@ -137,7 +137,7 @@ fn login(
     let mut world_loc = match world_map::WorldLocation::from_file(&world_loc_path) {
       Ok(world_location) => world_location,
       Err(_) => return content::Json(serde_json::json!({
-        "username": String::from(username),
+        "username": username,
         "logged_in": false,
         "err": format!(
           "nonexistent location {} found in user save file when attempting to log in",
@@ -152,14 +152,14 @@ fn login(
     world_loc.save_to_file(&world_loc_path);
 
     content::Json(serde_json::json!({
-      "username": String::from(username),
+      "username": username,
       "logged_in": true,
       "info": response,
       "was_previously_logged_in": already_logged_in
     }).to_string())
   } else {
     content::Json(serde_json::json!({
-      "username": String::from(username),
+      "username": username,
       "logged_in": false,
       "err": "invalid credentials"
     }).to_string())
@@ -191,7 +191,7 @@ fn logout(
     let mut world_loc = match world_map::WorldLocation::from_file(&world_loc_path) {
       Ok(world_location) => world_location,
       Err(_) => return content::Json(serde_json::json!({
-        "username": String::from(username),
+        "username": username,
         "logged_out": false,
         "err": format!(
           "nonexistent location {} found in user save file when attempting to log out",
@@ -207,12 +207,12 @@ fn logout(
     user_list.save_to_file(users_file_path);
 
     content::Json(serde_json::json!({
-      "username": String::from(username),
+      "username": username,
       "logged_out": true
     }).to_string())
   } else {
     content::Json(serde_json::json!({
-      "username": String::from(username),
+      "username": username,
       "logged_out": false,
       "err": "invalid credentials"
     }).to_string())
@@ -231,7 +231,7 @@ fn move_user(
     let mut old_location = match world_map::WorldLocation::from_location_id(old_location_id) {
       Ok(current_location) => current_location,
       Err(_) => return content::Json(serde_json::json!({
-        "username": String::from(username),
+        "username": username,
         "succeeded": false,
         "err": format!("cannot move you from invalid location {}", old_location_id)
       }).to_string())
@@ -241,7 +241,7 @@ fn move_user(
     ).to(new_location_id) {
       Ok(r) => r,
       Err(_) => return content::Json(serde_json::json!({
-        "username": String::from(username),
+        "username": username,
         "succeeded": false,
         "err": format!("cannot move you to invalid location {}", new_location_id)
       }).to_string())
@@ -250,13 +250,13 @@ fn move_user(
     user_list.update_timestamp_of_index(i);
     user_list.save_to_file(users_file_path);
     content::Json(serde_json::json!({
-      "username": String::from(username),
+      "username": username,
       "succeeded": true,
       "info": response
     }).to_string())
   } else {
     content::Json(serde_json::json!({
-      "username": String::from(username),
+      "username": username,
       "succeeded": false,
       "err": "invalid credentials"
     }).to_string())
@@ -278,7 +278,7 @@ fn teleport(
     move_user(username, correct_hash, new_location, users_file_path, &mut user_list)
   } else {
     content::Json(serde_json::json!({
-      "username": String::from(username),
+      "username": username,
       "succeeded": false,
       "err": "You do not have permission to use this command."
     }).to_string())
@@ -301,7 +301,7 @@ fn goto(
     let mut old_location = match world_map::WorldLocation::from_location_id(old_location_id) {
       Ok(current_location) => current_location,
       Err(_) => return content::Json(serde_json::json!({
-        "username": String::from(username),
+        "username": username,
         "succeeded": false,
         "err": format!(
           "cannot move you from invalid location \"{}\"",
@@ -315,7 +315,7 @@ fn goto(
       ).to(new_location_id) {
         Ok(r) => r,
         Err(_) => return content::Json(serde_json::json!({
-          "username": String::from(username),
+          "username": username,
           "succeeded": false,
           "err": format!("cannot move you to invalid location {}", new_location_id)
         }).to_string())
@@ -324,13 +324,13 @@ fn goto(
       user_list.update_timestamp_of_index(i);
       user_list.save_to_file(users_file_path);
       content::Json(serde_json::json!({
-        "username": String::from(username),
+        "username": username,
         "succeeded": true,
         "info": response
       }).to_string())
     } else {
       content::Json(serde_json::json!({
-        "username": String::from(username),
+        "username": username,
         "succeeded": false,
         "err": format!(
           "{} is not next to {}",
@@ -341,7 +341,7 @@ fn goto(
     }
   } else {
     content::Json(serde_json::json!({
-      "username": String::from(username),
+      "username": username,
       "succeeded": false,
       "err": "invalid credentials"
     }).to_string())
@@ -363,7 +363,7 @@ fn map(
     let old_location = match world_map::WorldLocation::from_location_id(old_location_id) {
       Ok(current_location) => current_location,
       Err(_) => return content::Json(serde_json::json!({
-        "username": String::from(username),
+        "username": username,
         "succeeded": false,
         "err": format!(
           "you are currently located at invalid location \"{}\"",
