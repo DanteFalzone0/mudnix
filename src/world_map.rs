@@ -117,9 +117,14 @@ impl WorldLocation {
 
   pub fn is_neighbor(&self, location_id: &str) -> bool {
     let loc_parts: Vec<&str> = location_id.split("::").collect();
-    self.attrs.neighbors.iter().any(|neighbor| neighbor == loc_parts[0])
-    || (loc_parts[0] == self.name
-        && self.attrs.sublocations.iter().any(|subloc| subloc.name == loc_parts[1]))
+    if loc_parts.len() == 1 {
+      self.name == loc_parts[0]
+      || self.attrs.neighbors.iter().any(|neighbor| neighbor == loc_parts[0])
+    } else {
+      self.attrs.neighbors.iter().any(|neighbor| neighbor == loc_parts[0])
+      || (loc_parts[0] == self.name
+          && self.attrs.sublocations.iter().any(|subloc| subloc.name == loc_parts[1]))
+    }
   }
 }
 

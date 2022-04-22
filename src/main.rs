@@ -348,6 +348,57 @@ fn goto(
   }
 }
 
+#[get("/map?<username>&<password>")]
+fn map(
+  username: &str,
+  password: &str,
+  users_file_path_mutex: &State<UsersFileMutex>
+) -> content::Json<String> {
+  let users_file_path: &str = &users_file_path_mutex.mutex
+    .lock().unwrap().to_string();
+  let user_list = entities::UserList::from_file(users_file_path);
+  let password_hash = hash(password);
+  if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
+    let old_location_id: &str = &user_list.users[i].world_location;
+    let old_location = match world_map::WorldLocation::from_location_id(old_location_id) {
+      Ok(current_location) => current_location,
+      Err(_) => return content::Json(serde_json::json!({
+        "username": String::from(username),
+        "succeeded": false,
+        "err": format!(
+          "you are currently located at invalid location \"{}\"",
+          old_location_id
+        )
+      }).to_string())
+    };
+    let mut neighbors: Vec<String> = vec![];
+    for neighbor in old_location.attrs.neighbors {
+      neighbors.push(neighbor);
+    }
+    if old_location_id != old_location.name {
+      neighbors.push(String::from(&old_location.name));
+    }
+    for sublocation in old_location.attrs.sublocations {
+      neighbors.push(format!(
+        "{}::{}",
+        old_location.name,
+        sublocation.name
+      ));
+    }
+    content::Json(serde_json::json!({
+      "username": username,
+      "succeeded": true,
+      "locations": neighbors
+    }).to_string())
+  } else {
+    content::Json(serde_json::json!({
+      "username": username,
+      "succeeded": false,
+      "err": "invalid credentials"
+    }).to_string())
+  }
+}
+
 #[launch]
 fn rocket() -> _ {
   rocket::build()
@@ -366,5 +417,6 @@ fn rocket() -> _ {
     .mount("/user", routes![logout])
     .mount("/game", routes![teleport])
     .mount("/game", routes![goto])
+    .mount("/game", routes![map])
     .mount("/", FileServer::from("/home/runner/mudnix/static"))
 }
