@@ -119,14 +119,6 @@ impl TreasureChest {
   pub fn new() -> Self {
     TreasureChest { contents: vec![] }
   }
-
-  pub fn open_chest(&self) -> ActionResult {
-    ActionResult {
-      info: String::from("open:TreasureChest"),
-      succeeded: true,
-      data: serde_json::value::to_value(self).unwrap()
-    }
-  }
 }
 
 impl Entity for TreasureChest {

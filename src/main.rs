@@ -441,6 +441,31 @@ fn map(
   }
 }
 
+#[get("/close_chest?<username>&<password>")]
+fn close_chest(
+  username: &str,
+  password: &str,
+  users_file_path_mutex: &State<UsersFileMutex>
+) -> content::Json<String> {
+  let users_file_path: &str = &users_file_path_mutex.mutex
+    .lock().unwrap().to_string();
+  let mut user_list = entities::UserList::from_file(users_file_path);
+  let password_hash = hash(password);
+  if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
+    user_list.users[i].active_treasure_chest = None;
+    user_list.update_timestamp_of_index(i);
+    user_list.save_to_file(users_file_path);
+    content::Json(serde_json::json!({
+      "username": username,
+      "succeeded": true,
+      "info": "Upon closing the chest, it disappears into ethereal green flames\
+              \nwhich radiate no heat."
+    }).to_string())
+  } else {
+    error_response(username, "request failed")
+  }
+}
+
 #[launch]
 fn rocket() -> _ {
   rocket::build()
@@ -460,5 +485,6 @@ fn rocket() -> _ {
     .mount("/game", routes![teleport])
     .mount("/game", routes![goto])
     .mount("/game", routes![map])
+    .mount("/game", routes![close_chest])
     .mount("/", FileServer::from("/home/runner/mudnix/static"))
 }

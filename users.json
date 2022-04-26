@@ -12,11 +12,9 @@
       "username": "boop",
       "password_hash": "016c756f0e615ef70ca05eb499a74d31c2ddec7244760d59d792583c0410b36d",
       "inventory": [],
-      "active_treasure_chest": {
-        "contents": []
-      },
-      "world_location": "Quux_Plains::northern_region",
-      "last_activity_timestamp": 1650947819
+      "active_treasure_chest": null,
+      "world_location": "Quux_Plains::central_region",
+      "last_activity_timestamp": 1650949499
     },
     {
       "username": "ljhbee212",
