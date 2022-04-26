@@ -1,11 +1,6 @@
 {
   "name": "Quux_Plains",
   "attrs": {
-    "neighbors": [
-      "Foo_Pond"
-    ],
-    "active_users": [],
-    "npcs": [],
     "treasure_chest_spawn_rate": 0.15,
     "biome": {
       "eco": "plains",
@@ -15,24 +10,30 @@
       {
         "name": "northern_region",
         "t": "field",
+        "neighbors": [],
         "active_users": [],
         "npcs": []
       },
       {
         "name": "southern_region",
         "t": "field",
+        "neighbors": [],
         "active_users": [],
         "npcs": []
       },
       {
         "name": "eastern_region",
         "t": "field",
+        "neighbors": [
+          "Foo_Pond::shore"
+        ],
         "active_users": [],
         "npcs": []
       },
       {
         "name": "western_region",
         "t": "field",
+        "neighbors": [],
         "active_users": [],
         "npcs": []
       }

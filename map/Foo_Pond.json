@@ -1,11 +1,6 @@
 {
   "name": "Foo_Pond",
   "attrs": {
-    "neighbors": [
-      "Quux_Plains"
-    ],
-    "active_users": [],
-    "npcs": [],
     "treasure_chest_spawn_rate": 0.0,
     "biome": {
       "eco": "plains",
@@ -15,12 +10,16 @@
       {
         "name": "waters",
         "t": "freshwater_body",
+        "neighbors": [],
         "active_users": [],
         "npcs": []
       },
       {
         "name": "shore",
         "t": "beach",
+        "neighbors": [
+          "Quux_Plains::eastern_region"
+        ],
         "active_users": [],
         "npcs": []
       }

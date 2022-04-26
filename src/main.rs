@@ -145,10 +145,17 @@ fn login(
         )
       }).to_string())
     };
-    let response = world_loc.move_user_to_self(
+    let response = match world_loc.move_user_to_self(
       username,
       &user_list.users[i].world_location
-    );
+    ) {
+      Ok(r) => r,
+      Err(_) => return content::Json(serde_json::json!({
+        "username": username,
+        "logged_in": false,
+        "err": "invalid location in user file"
+      }).to_string())
+    };
     world_loc.save_to_file(&world_loc_path);
 
     content::Json(serde_json::json!({
@@ -219,6 +226,14 @@ fn logout(
   }
 }
 
+fn error_response(username: &str, error_response: &str) -> content::Json<String> {
+  content::Json(serde_json::json!({
+    "username": username,
+    "succeeded": false,
+    "err": error_response
+  }).to_string())
+}
+
 fn move_user(
   username: &str,
   password_hash: &str,
@@ -230,21 +245,19 @@ fn move_user(
     let old_location_id: &str = &user_list.users[i].world_location;
     let mut old_location = match world_map::WorldLocation::from_location_id(old_location_id) {
       Ok(current_location) => current_location,
-      Err(_) => return content::Json(serde_json::json!({
-        "username": username,
-        "succeeded": false,
-        "err": format!("cannot move you from invalid location {}", old_location_id)
-      }).to_string())
+      Err(_) => return error_response(
+        username,
+        &format!("cannot move you from invalid location {}", old_location_id)
+      )
     };
     let response = match old_location.move_user_from(
       username, old_location_id
     ).to(new_location_id) {
       Ok(r) => r,
-      Err(_) => return content::Json(serde_json::json!({
-        "username": username,
-        "succeeded": false,
-        "err": format!("cannot move you to invalid location {}", new_location_id)
-      }).to_string())
+      Err(_) => return error_response(
+        username,
+        &format!("cannot move you to invalid location {}", new_location_id)
+      )
     };
     user_list.users[i].world_location = String::from(new_location_id);
     user_list.update_timestamp_of_index(i);
@@ -255,11 +268,7 @@ fn move_user(
       "info": response
     }).to_string())
   } else {
-    content::Json(serde_json::json!({
-      "username": username,
-      "succeeded": false,
-      "err": "invalid credentials"
-    }).to_string())
+    error_response(username, "invalid credentials")
   }
 }
 
@@ -277,11 +286,7 @@ fn teleport(
   if username == "dante_falzone" && hash(password) == correct_hash {
     move_user(username, correct_hash, new_location, users_file_path, &mut user_list)
   } else {
-    content::Json(serde_json::json!({
-      "username": username,
-      "succeeded": false,
-      "err": "You do not have permission to use this command."
-    }).to_string())
+    error_response(username, "you do not have permission to use this command")
   }
 }
 
@@ -300,25 +305,40 @@ fn goto(
     let old_location_id: &str = &user_list.users[i].world_location;
     let mut old_location = match world_map::WorldLocation::from_location_id(old_location_id) {
       Ok(current_location) => current_location,
-      Err(_) => return content::Json(serde_json::json!({
-        "username": username,
-        "succeeded": false,
-        "err": format!(
+      Err(_) => return error_response(
+        username, &format!(
           "cannot move you from invalid location \"{}\"",
           old_location_id
         )
-      }).to_string())
+      )
     };
-    if old_location_id == new_location_id || old_location.is_neighbor(new_location_id) {
+
+    let old_sublocation_id = match world_map::get_sublocation_from_id(old_location_id) {
+      Ok(id) => id,
+      Err(_) => return error_response(
+        username, &format!(
+          "no sublocation specified for {}",
+          old_location_id
+        )
+      )
+    };
+
+    let legal_to_move: bool =
+      old_location_id == new_location_id
+      || old_location.name == world_map::get_parent_location_from_id(new_location_id)
+      || old_location.attrs.sublocations.iter().any(
+        |sl| sl.name == old_sublocation_id
+        && sl.is_neighbor(new_location_id)
+      );
+
+    if legal_to_move {
       let response = match old_location.move_user_from(
         username, old_location_id
       ).to(new_location_id) {
         Ok(r) => r,
-        Err(_) => return content::Json(serde_json::json!({
-          "username": username,
-          "succeeded": false,
-          "err": format!("cannot move you to invalid location {}", new_location_id)
-        }).to_string())
+        Err(_) => return error_response(
+          username, &format!("cannot move you to invalid location {}", new_location_id)
+        )
       };
       user_list.users[i].world_location = String::from(new_location_id);
       user_list.update_timestamp_of_index(i);
@@ -329,22 +349,17 @@ fn goto(
         "info": response
       }).to_string())
     } else {
-      content::Json(serde_json::json!({
-        "username": username,
-        "succeeded": false,
-        "err": format!(
+      error_response(
+        username,
+        &format!(
           "{} is not next to {}",
           world_map::location_id_to_human_readable(old_location_id),
           world_map::location_id_to_human_readable(new_location_id)
         )
-      }).to_string())
+      )
     }
   } else {
-    content::Json(serde_json::json!({
-      "username": username,
-      "succeeded": false,
-      "err": "invalid credentials"
-    }).to_string())
+    error_response(username, "invalid credentials")
   }
 }
 
@@ -362,21 +377,37 @@ fn map(
     let old_location_id: &str = &user_list.users[i].world_location;
     let old_location = match world_map::WorldLocation::from_location_id(old_location_id) {
       Ok(current_location) => current_location,
-      Err(_) => return content::Json(serde_json::json!({
-        "username": username,
-        "succeeded": false,
-        "err": format!(
+      Err(_) => return error_response(
+        username,
+        &format!(
           "you are currently located at invalid location \"{}\"",
           old_location_id
         )
-      }).to_string())
+      )
+    };
+    let old_sublocation_id = match world_map::get_sublocation_from_id(old_location_id) {
+      Ok(id) => id,
+      Err(_) => return error_response(
+        username,
+        &format!(
+          "location id {} does not contain a sublocation",
+          old_location_id
+        )
+      )
     };
     let mut neighbors: Vec<String> = vec![];
-    for neighbor in old_location.attrs.neighbors {
-      neighbors.push(neighbor);
-    }
-    if old_location_id != old_location.name {
-      neighbors.push(String::from(&old_location.name));
+    let old_sublocation_index = match old_location.sublocation_index(&old_sublocation_id) {
+      Ok(i) => i,
+      Err(_) => return error_response(
+        username,
+        &format!(
+          "unable to find the requested sublocation {}",
+          old_sublocation_id
+        )
+      )
+    };
+    for neighbor in old_location.attrs.sublocations[old_sublocation_index].neighbors.iter() {
+      neighbors.push(String::from(neighbor));
     }
     for sublocation in old_location.attrs.sublocations {
       neighbors.push(format!(
@@ -391,11 +422,7 @@ fn map(
       "locations": neighbors
     }).to_string())
   } else {
-    content::Json(serde_json::json!({
-      "username": username,
-      "succeeded": false,
-      "err": "invalid credentials"
-    }).to_string())
+    error_response(username, "invalid credentials")
   }
 }
 

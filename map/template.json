@@ -2,8 +2,6 @@
   "name": "template",
   "attrs": {
     "neighbors": [],
-    "active_users": [],
-    "npcs": [],
     "treasure_chest_spawn_rate": 1.0,
     "biome": {
       "eco": "ecosystem",

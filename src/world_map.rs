@@ -14,15 +14,19 @@ pub struct Biome {
 pub struct SubLocation {
   pub name: String,
   pub t: String,
+  pub neighbors: Vec<String>,
   pub active_users: Vec<String>,
   pub npcs: Vec<entities::Npc>
 }
 
+impl SubLocation {
+  pub fn is_neighbor(&self, location_id: &str) -> bool {
+    self.neighbors.iter().any(|neighbor| neighbor == location_id)
+  }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct WorldLocationAttrs {
-  pub neighbors: Vec<String>,
-  pub active_users: Vec<String>,
-  pub npcs: Vec<entities::Npc>,
   pub treasure_chest_spawn_rate: f32,
   pub biome: Biome,
   pub sublocations: Vec<SubLocation>
@@ -45,7 +49,10 @@ impl MovementResult {
       Ok(dwl) => dwl,
       Err(e) => return Err(e)
     };
-    let result = dest.move_user_to_self(&self.username, dest_location_id);
+    let result = match dest.move_user_to_self(&self.username, dest_location_id) {
+      Ok(r) => r,
+      Err(e) => return Err(e)
+    };
     dest.save_to_file(&get_path_from_location_id(dest_location_id));
     Ok(result)
   }
@@ -70,41 +77,38 @@ impl WorldLocation {
       .expect("unable to save world location");
   }
 
-  pub fn move_user_to_self(&mut self, username: &str, location_id: &str) -> String {
+  pub fn move_user_to_self(
+    &mut self,
+    username: &str,
+    location_id: &str
+  ) -> Result<String, io::Error> {
     let loc_parts: Vec<&str> = location_id.split("::").collect();
     if loc_parts.len() == 1 {
-      if !self.attrs.active_users.iter().any(|user| user == username) {
-        self.attrs.active_users.push(String::from(username));
-      }
-      format!("You are at {}.", location_id.replace("_", " "))
+      Err(io::Error::new(io::ErrorKind::InvalidInput, "no sublocation specified"))
     } else {
       if let Some(i) = self.attrs.sublocations.iter().position(|p| p.name == loc_parts[1]) {
         if !self.attrs.sublocations[i].active_users.iter().any(|user| user == username) {
           self.attrs.sublocations[i].active_users.push(String::from(username));
         }
-        format!(
+        Ok(format!(
           "You are at {}.",
           location_id_to_human_readable(location_id)
-        )
+        ))
       } else {
-        format!(
+        Ok(format!(
           "{}: no such sublocation in {}",
           loc_parts[1].replace("_", " "),
           loc_parts[0].replace("_", " ")
-        )
+        ))
       }
     }
   }
 
   pub fn remove_user(&mut self, username: &str) {
-    if let Some(i) = self.attrs.active_users.iter().position(|user| user == username) {
-      self.attrs.active_users.swap_remove(i);
-    } else {
-      for sublocation in self.attrs.sublocations.iter_mut() {
-        if let Some(i) = sublocation.active_users.iter().position(|user| user == username) {
-          sublocation.active_users.swap_remove(i);
-          break;
-        }
+    for sublocation in self.attrs.sublocations.iter_mut() {
+      if let Some(i) = sublocation.active_users.iter().position(|user| user == username) {
+        sublocation.active_users.swap_remove(i);
+        break;
       }
     }
   }
@@ -115,22 +119,20 @@ impl WorldLocation {
     MovementResult { username: String::from(username) }
   }
 
-  pub fn is_neighbor(&self, location_id: &str) -> bool {
-    let loc_parts: Vec<&str> = location_id.split("::").collect();
-    if loc_parts.len() == 1 {
-      self.name == loc_parts[0]
-      || self.attrs.neighbors.iter().any(|neighbor| neighbor == loc_parts[0])
+  pub fn sublocation_index(&self, sublocation_id: &str) -> Result<usize, io::Error> {
+    if let Some(i) = self.attrs.sublocations.iter().position(|sl| sl.name == sublocation_id) {
+      Ok(i)
     } else {
-      self.attrs.neighbors.iter().any(|neighbor| neighbor == loc_parts[0])
-      || (loc_parts[0] == self.name
-          && self.attrs.sublocations.iter().any(|subloc| subloc.name == loc_parts[1]))
+      Err(io::Error::new(io::ErrorKind::InvalidInput, "sublocation does not exist"))
     }
   }
 }
 
 pub fn get_path_from_location_id(location_id: &str) -> String {
-  let loc_parts: Vec<&str> = location_id.split("::").collect();
-  format!("/home/runner/mudnix/map/{}.json", loc_parts[0])
+  format!(
+    "/home/runner/mudnix/map/{}.json",
+    get_parent_location_from_id(location_id)
+  )
 }
 
 pub fn location_id_to_human_readable(location_id: &str) -> String {
@@ -143,5 +145,23 @@ pub fn location_id_to_human_readable(location_id: &str) -> String {
       loc_parts[1].replace("_", " "),
       loc_parts[0].replace("_", " ")
     )
+  }
+}
+
+/**
+ * This function returns the parent location of a location ID.
+ * get_parent_location_from_id("foo::bar") will evaluate to "foo".
+ */
+pub fn get_parent_location_from_id(location_id: &str) -> String {
+  let loc_parts: Vec<&str> = location_id.split("::").collect();
+  String::from(loc_parts[0])
+}
+
+pub fn get_sublocation_from_id(location_id: &str) -> Result<String, io::Error> {
+  let loc_parts: Vec<&str> = location_id.split("::").collect();
+  if loc_parts.len() >= 2 {
+    Ok(String::from(loc_parts[1]))
+  } else {
+    Err(io::Error::new(io::ErrorKind::InvalidInput, "location id has no sublocation"))
   }
 }
