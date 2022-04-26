@@ -5,8 +5,8 @@
       "password_hash": "5f910b87aa8c3a2b7eabf3c61f56fbae536af7949e15afd84cc0b67d50d5e909",
       "inventory": [],
       "active_treasure_chest": null,
-      "world_location": "Quux_Plains::northern_region",
-      "last_activity_timestamp": 1650944283
+      "world_location": "Quux_Plains::central_region",
+      "last_activity_timestamp": 1650951371
     },
     {
       "username": "boop",
@@ -14,7 +14,7 @@
       "inventory": [],
       "active_treasure_chest": null,
       "world_location": "Quux_Plains::central_region",
-      "last_activity_timestamp": 1650949499
+      "last_activity_timestamp": 1650949616
     },
     {
       "username": "ljhbee212",
@@ -38,7 +38,7 @@
       "inventory": [],
       "active_treasure_chest": null,
       "world_location": "Foo_Pond::shore",
-      "last_activity_timestamp": 1650942127
+      "last_activity_timestamp": 1650951054
     },
     {
       "username": "Torcenta",
@@ -53,8 +53,8 @@
       "password_hash": "436eb7a9eb71e109f45ec1abebaa77343ecb1daf67579d5a77654fe966258542",
       "inventory": [],
       "active_treasure_chest": null,
-      "world_location": "Foo_Pond::shore",
-      "last_activity_timestamp": 1650941830
+      "world_location": "Quux_Plains::central_region",
+      "last_activity_timestamp": 1650950562
     }
   ]
 }

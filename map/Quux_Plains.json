@@ -1,7 +1,7 @@
 {
   "name": "Quux_Plains",
   "attrs": {
-    "treasure_chest_spawn_rate": 0.8,
+    "treasure_chest_spawn_rate": 0.15,
     "biome": {
       "eco": "plains",
       "urban": false
@@ -11,9 +11,7 @@
         "name": "central_region",
         "t": "field",
         "neighbors": [],
-        "active_users": [
-          "boop"
-        ],
+        "active_users": [],
         "npcs": []
       },
       {

@@ -441,7 +441,7 @@ fn map(
   }
 }
 
-#[get("/close_chest?<username>&<password>")]
+#[get("/close-chest?<username>&<password>")]
 fn close_chest(
   username: &str,
   password: &str,
