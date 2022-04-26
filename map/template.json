@@ -1,7 +1,6 @@
 {
   "name": "template",
   "attrs": {
-    "neighbors": [],
     "treasure_chest_spawn_rate": 1.0,
     "biome": {
       "eco": "ecosystem",
@@ -11,6 +10,7 @@
       {
         "name": "sublocation",
         "t": "type_of_sublocation",
+        "neighbors": [],
         "active_users": [],
         "npcs": []
       }

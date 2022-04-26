@@ -7,6 +7,8 @@ use serde_json;
 pub struct User {
   pub username: String,
   pub password_hash: String, // SHA-256 hash
+  pub inventory: Vec<Item>,
+  pub active_treasure_chest: Option<TreasureChest>,
   pub world_location: String,
   pub last_activity_timestamp: u64 // seconds since Unix epoch
 }
@@ -16,6 +18,8 @@ impl User {
     Self {
       username: username.to_string(),
       password_hash: password_hash.to_string(),
+      inventory: vec![],
+      active_treasure_chest: None,
       world_location: world_location.to_string(),
       last_activity_timestamp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)
         .unwrap().as_secs()
@@ -76,4 +80,63 @@ impl UserList {
 pub struct Npc {
   pub name: String,
   // TODO finish implementation
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ActionResult {
+  pub info: String,
+  pub succeeded: bool,
+  pub data: serde_json::Value
+}
+
+pub trait Entity {
+  fn inspect(&self) -> ActionResult;
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Item {
+  pub name: String,
+  pub description: String,
+  pub rarity: String
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TreasureChest {
+  pub contents: Vec<Item>
+}
+
+impl Entity for Item {
+  fn inspect(&self) -> ActionResult {
+    ActionResult {
+      info: String::from("inspect:Item"),
+      succeeded: true,
+      data: serde_json::value::to_value(self).unwrap()
+    }
+  }
+}
+
+impl TreasureChest {
+  pub fn new() -> Self {
+    TreasureChest { contents: vec![] }
+  }
+
+  pub fn open_chest(&self) -> ActionResult {
+    ActionResult {
+      info: String::from("open:TreasureChest"),
+      succeeded: true,
+      data: serde_json::value::to_value(self).unwrap()
+    }
+  }
+}
+
+impl Entity for TreasureChest {
+  fn inspect(&self) -> ActionResult {
+    ActionResult {
+      info: String::from("inspect:TreasureChest"),
+      succeeded: true,
+      data: serde_json::json!({
+        "description": "The surface is made of real wood. It does not appear to be a mimic."
+      })
+    }
+  }
 }

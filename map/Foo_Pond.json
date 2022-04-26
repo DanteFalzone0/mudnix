@@ -20,7 +20,9 @@
         "neighbors": [
           "Quux_Plains::eastern_region"
         ],
-        "active_users": [],
+        "active_users": [
+          "KommissarJack"
+        ],
         "npcs": []
       }
     ]

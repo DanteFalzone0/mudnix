@@ -1,6 +1,6 @@
 [package]
 name = "mudnix"
-version = "0.2.2"
+version = "0.3.1"
 authors = ["Dante J Falzone"]
 edition = "2021"
 
@@ -12,6 +12,7 @@ sha2 = "0.10.2"
 hex = "0.4.3"
 serde = "1.0.136"
 serde_json = "1.0.79"
+rand = "0.8.5"
 
 # https://stackoverflow.com/a/54842093/10942736
 [profile.dev]

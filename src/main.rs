@@ -1,5 +1,7 @@
 #[macro_use] extern crate rocket;
 extern crate hex;
+extern crate rand;
+use crate::rand::Rng;
 use std::sync::Mutex;
 use rocket::fs::FileServer;
 use sha2::{Sha256, Digest};
@@ -259,13 +261,15 @@ fn move_user(
         &format!("cannot move you to invalid location {}", new_location_id)
       )
     };
+
     user_list.users[i].world_location = String::from(new_location_id);
     user_list.update_timestamp_of_index(i);
     user_list.save_to_file(users_file_path);
     content::Json(serde_json::json!({
       "username": username,
       "succeeded": true,
-      "info": response
+      "info": response,
+      "active_treasure_chest": user_list.users[i].active_treasure_chest
     }).to_string())
   } else {
     error_response(username, "invalid credentials")
@@ -340,13 +344,24 @@ fn goto(
           username, &format!("cannot move you to invalid location {}", new_location_id)
         )
       };
+      let new_location = world_map::WorldLocation::from_location_id(new_location_id)
+        .unwrap();
+
+      // generate a TreasureChest
+      let spawn_val = rand::thread_rng().gen_range(0.0..1.0);
+      if spawn_val < new_location.attrs.treasure_chest_spawn_rate {
+        user_list.users[i].active_treasure_chest = Some(entities::TreasureChest::new());
+      } else {
+        user_list.users[i].active_treasure_chest = None;
+      }
       user_list.users[i].world_location = String::from(new_location_id);
       user_list.update_timestamp_of_index(i);
       user_list.save_to_file(users_file_path);
       content::Json(serde_json::json!({
         "username": username,
         "succeeded": true,
-        "info": response
+        "info": response,
+        "active_treasure_chest": user_list.users[i].active_treasure_chest
       }).to_string())
     } else {
       error_response(
