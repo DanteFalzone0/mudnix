@@ -287,7 +287,7 @@ fn teleport(
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
   let mut user_list = entities::UserList::from_file(users_file_path);
-  let correct_hash = "34c3a7e204a19ede0b7d9f24c9fe5095e2adebcb6f2a476babd1311455e4bd59";
+  let correct_hash = "e6fd95a315bb7129a50fd85b20af443d9a4d42c22aaff632c81808b4aee53335";
   if username == "dante_falzone" && hash(password) == correct_hash {
     move_user(username, correct_hash, new_location, users_file_path, &mut user_list)
   } else {
