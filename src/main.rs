@@ -12,6 +12,7 @@ use rocket::State;
 use rocket::response::content;
 use serde_json;
 
+use crate::entities::ItemContainer;
 mod entities;
 mod world_map;
 mod mudnix_utils;
@@ -286,7 +287,7 @@ fn teleport(
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
   let mut user_list = entities::UserList::from_file(users_file_path);
-  let correct_hash = "5f910b87aa8c3a2b7eabf3c61f56fbae536af7949e15afd84cc0b67d50d5e909";
+  let correct_hash = "34c3a7e204a19ede0b7d9f24c9fe5095e2adebcb6f2a476babd1311455e4bd59";
   if username == "dante_falzone" && hash(password) == correct_hash {
     move_user(username, correct_hash, new_location, users_file_path, &mut user_list)
   } else {
@@ -452,17 +453,45 @@ fn close_chest(
   let mut user_list = entities::UserList::from_file(users_file_path);
   let password_hash = hash(password);
   if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
+    if let Some(treasure_chest) = user_list.users[i].active_treasure_chest.clone() {
+      for item in treasure_chest.contents.iter() {
+        user_list.users[i].inventory.add_item(item);
+      }
+    }
     user_list.users[i].active_treasure_chest = None;
     user_list.update_timestamp_of_index(i);
     user_list.save_to_file(users_file_path);
     content::Json(serde_json::json!({
       "username": username,
       "succeeded": true,
-      "info": "Upon closing the chest, it disappears into ethereal green flames\
+      "info": "The chest closes and disappears into ethereal green flames\
               \nwhich radiate no heat."
     }).to_string())
   } else {
     error_response(username, "request failed")
+  }
+}
+
+#[get("/inventory?<username>&<password>")]
+fn inventory(
+  username: &str,
+  password: &str,
+  users_file_path_mutex: &State<UsersFileMutex>
+) -> content::Json<String> {
+  let users_file_path: &str = &users_file_path_mutex.mutex
+    .lock().unwrap().to_string();
+  let mut user_list = entities::UserList::from_file(users_file_path);
+  let password_hash = hash(password);
+  if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
+    user_list.update_timestamp_of_index(i);
+    user_list.save_to_file(users_file_path);
+    content::Json(serde_json::json!({
+      "username": username,
+      "succeeded": true,
+      "inventory": user_list.users[i].inventory
+    }).to_string())
+  } else {
+    error_response(username, "invalid credentials")
   }
 }
 
@@ -486,5 +515,6 @@ fn rocket() -> _ {
     .mount("/game", routes![goto])
     .mount("/game", routes![map])
     .mount("/game", routes![close_chest])
+    .mount("/user", routes![inventory])
     .mount("/", FileServer::from("/home/runner/mudnix/static"))
 }

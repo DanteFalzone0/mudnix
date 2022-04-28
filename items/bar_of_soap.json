@@ -1,0 +1,7 @@
+{
+  "t": "bar_of_soap",
+  "qty": 1,
+  "name": "Bar of Soap",
+  "description": "A bar of soap. Smells nice.\nSlippery when wet. Not very tasty.",
+  "rarity": "common"
+}
