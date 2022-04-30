@@ -10,6 +10,8 @@ use rocket::{Request, Response};
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::State;
 use rocket::response::content;
+use rocket::response::stream::{Event, EventStream};
+use rocket::tokio::time::{self, Duration};
 use serde_json;
 
 use crate::entities::ItemContainer;
@@ -495,6 +497,31 @@ fn inventory(
   }
 }
 
+#[get("/check-connection")]
+fn check_connection() -> EventStream![] {
+  EventStream! {
+    let mut interval = time::interval(Duration::from_secs(1));
+    let mut i = 0;
+    loop {
+      yield Event::data(serde_json::json!({
+        "alive": true,
+        "count": i
+      }).to_string());
+      i += 1;
+      interval.tick().await;
+    }
+  }
+}
+
+#[post("/say?<username>&<password>&<s>")]
+fn say(
+  username: &str,
+  password: &str,
+  users_file_path_mutex: &State<UsersFileMutex>
+) {
+  // TODO implement
+}
+
 #[launch]
 fn rocket() -> _ {
   rocket::build()
@@ -507,6 +534,7 @@ fn rocket() -> _ {
     .attach(CORS)
     .mount("/", routes![mudnix])
     .mount("/", routes![version])
+    .mount("/", routes![check_connection])
     .mount("/hash", routes![hash])
     .mount("/user", routes![new_user])
     .mount("/user", routes![login])
