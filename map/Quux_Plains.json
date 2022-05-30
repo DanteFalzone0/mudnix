@@ -11,7 +11,11 @@
         "name": "central_region",
         "t": "field",
         "neighbors": [],
-        "active_users": [],
+        "active_users": [
+          "boop",
+          "testperson",
+          "dante_falzone"
+        ],
         "npcs": []
       },
       {
@@ -41,7 +45,9 @@
         "name": "western_region",
         "t": "field",
         "neighbors": [],
-        "active_users": [],
+        "active_users": [
+          "Skeletor"
+        ],
         "npcs": []
       }
     ]

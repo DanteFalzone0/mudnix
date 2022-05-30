@@ -18,6 +18,7 @@ use crate::entities::ItemContainer;
 mod entities;
 mod world_map;
 mod mudnix_utils;
+mod message;
 
 // https://stackoverflow.com/a/69342225/10942736
 pub struct CORS;
@@ -513,13 +514,75 @@ fn check_connection() -> EventStream![] {
   }
 }
 
-#[post("/say?<username>&<password>&<s>")]
+#[post("/say?<username>&<password>&<message>")]
 fn say(
   username: &str,
   password: &str,
-  users_file_path_mutex: &State<UsersFileMutex>
-) {
-  // TODO implement
+  message: &str,
+  users_pool_mutex: &State<LoggedInUserPool>
+) -> &'static str {
+  /* We use the pool here instead of just loading from the users file
+     because we don't want to let users send messages if they aren't logged in.
+     Otherwise it would be trivial to write a script to spam people with messages. */
+  let users_pool = users_pool_mutex.user_list_mutex.lock().unwrap();
+  let password_hash = hash(password);
+  if let Some(i) = users_pool.get_index_if_valid_creds(username, &password_hash) {
+    let mut message_queue = message::MessageQueue::new("/home/runner/mudnix/message_queue");
+    message_queue.send_message(message::Message::new(
+      message, username, &users_pool.users[i].world_location
+    ));
+    "Ok"
+  } else {
+    "Denied"
+  }
+}
+
+#[get("/message-queue?<username>&<password>")]
+fn get_messages(
+  username: &str,
+  password: &str,
+  users_pool_mutex: &State<LoggedInUserPool>,
+) -> EventStream![] {
+  let users_pool = users_pool_mutex.user_list_mutex.lock().unwrap();
+
+  // we make this copy so we don't have to put the borrow inside the EventStream
+  let username_copy = String::from(username);
+
+  let password_hash = hash(password);
+
+  // TODO implement better error handling
+  let world_location: String = if let Some(i) = users_pool.get_index_if_valid_creds(
+    &username_copy, &password_hash
+  ) {
+    users_pool.users[i].world_location.clone()
+  } else {
+    String::from("invalid")
+  };
+
+  let mut message_queue = message::MessageQueue::new("/home/runner/mudnix/message_queue");
+  let mut interval = time::interval(Duration::from_millis(100));
+  EventStream! {
+    if world_location != "invalid" {
+      loop {
+        interval.tick().await;
+        message_queue.flush_queue();
+        let messages = message_queue.get_messages(&world_location);
+        if messages.len() > 0 {
+          yield Event::data(serde_json::json!({
+            "username": username_copy,
+            "succeeded": true,
+            "queue": messages
+          }).to_string());
+        }
+      }
+    } else {
+      yield Event::data(serde_json::json!({
+        "username": username_copy,
+        "succeeded": false,
+        "err": "You are not logged in."
+      }).to_string());
+    }
+  }
 }
 
 #[launch]
@@ -544,5 +607,7 @@ fn rocket() -> _ {
     .mount("/game", routes![map])
     .mount("/game", routes![close_chest])
     .mount("/user", routes![inventory])
+    .mount("/game", routes![say])
+    .mount("/game", routes![get_messages])
     .mount("/", FileServer::from("/home/runner/mudnix/static"))
 }
