@@ -519,17 +519,19 @@ fn say(
   username: &str,
   password: &str,
   message: &str,
-  users_pool_mutex: &State<LoggedInUserPool>
+  users_file_path_mutex: &State<UsersFileMutex>
 ) -> &'static str {
   /* We use the pool here instead of just loading from the users file
      because we don't want to let users send messages if they aren't logged in.
      Otherwise it would be trivial to write a script to spam people with messages. */
-  let users_pool = users_pool_mutex.user_list_mutex.lock().unwrap();
+  let users_file_path: &str = &users_file_path_mutex.mutex
+    .lock().unwrap().to_string();
+  let user_list = entities::UserList::from_file(users_file_path);
   let password_hash = hash(password);
-  if let Some(i) = users_pool.get_index_if_valid_creds(username, &password_hash) {
+  if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
     let mut message_queue = message::MessageQueue::new("/home/runner/mudnix/message_queue");
     message_queue.send_message(message::Message::new(
-      message, username, &users_pool.users[i].world_location
+      message, username, &user_list.users[i].world_location
     ));
     "Ok"
   } else {
@@ -541,32 +543,39 @@ fn say(
 fn get_messages(
   username: &str,
   password: &str,
-  users_pool_mutex: &State<LoggedInUserPool>,
+  users_file_path_mutex: &State<UsersFileMutex>
 ) -> EventStream![] {
-  let users_pool = users_pool_mutex.user_list_mutex.lock().unwrap();
+  let users_file_path: &str = &users_file_path_mutex.mutex
+    .lock().unwrap().to_string();
+  let starting_user_list = entities::UserList::from_file(users_file_path);
 
   // we make this copy so we don't have to put the borrow inside the EventStream
   let username_copy = String::from(username);
 
   let password_hash = hash(password);
 
-  // TODO implement better error handling
-  let world_location: String = if let Some(i) = users_pool.get_index_if_valid_creds(
+  let starting_world_location: String = if let Some(i) = starting_user_list.get_index_if_valid_creds(
     &username_copy, &password_hash
   ) {
-    users_pool.users[i].world_location.clone()
+    starting_user_list.users[i].world_location.clone()
   } else {
     String::from("invalid")
   };
 
+  // we copy the file path here, but it's fine because we are only reading the file, not writing it
+  let users_file_path_copy: String = String::from(users_file_path);
+
   let mut message_queue = message::MessageQueue::new("/home/runner/mudnix/message_queue");
   let mut interval = time::interval(Duration::from_millis(100));
   EventStream! {
-    if world_location != "invalid" {
+    if starting_world_location != "invalid" {
       loop {
+        let fresh_user_list = entities::UserList::from_file(&users_file_path_copy);
+        let i = fresh_user_list.get_index_if_valid_creds(&username_copy, &password_hash).unwrap();
+        let current_location = fresh_user_list.users[i].world_location.clone();
         interval.tick().await;
         message_queue.flush_queue();
-        let messages = message_queue.get_messages(&world_location);
+        let messages = message_queue.get_messages(&current_location);
         if messages.len() > 0 {
           yield Event::data(serde_json::json!({
             "username": username_copy,

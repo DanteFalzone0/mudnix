@@ -11,18 +11,16 @@
         "name": "central_region",
         "t": "field",
         "neighbors": [],
-        "active_users": [
-          "boop",
-          "testperson",
-          "dante_falzone"
-        ],
+        "active_users": [],
         "npcs": []
       },
       {
         "name": "northern_region",
         "t": "field",
         "neighbors": [],
-        "active_users": [],
+        "active_users": [
+          "k"
+        ],
         "npcs": []
       },
       {
