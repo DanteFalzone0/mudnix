@@ -9,5 +9,6 @@
 		pkgs.vim
 		pkgs.killall
 		pkgs.htop
+		pkgs.python310
 	];
 }
