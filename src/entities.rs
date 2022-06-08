@@ -1,5 +1,5 @@
-extern crate rand;
-use crate::rand::Rng;
+//extern crate rand;
+//use crate::rand::Rng;
 use std::time::SystemTime;
 use std::fs;
 use std::io;
@@ -38,19 +38,23 @@ pub struct User {
   pub inventory: Inventory,
   pub active_treasure_chest: Option<TreasureChest>,
   pub world_location: String,
-  pub last_activity_timestamp: u64 // seconds since Unix epoch
+  pub last_activity_timestamp: u64, // seconds since Unix epoch
+  pub account_creation_timestamp: u64
 }
 
 impl User {
   pub fn new(username: &str, password_hash: &str, world_location: &str) -> Self {
+    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)
+      .unwrap().as_secs();
+
     Self {
       username: username.to_string(),
       password_hash: password_hash.to_string(),
       inventory: vec![],
       active_treasure_chest: None,
       world_location: world_location.to_string(),
-      last_activity_timestamp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap().as_secs()
+      last_activity_timestamp: now,
+      account_creation_timestamp: now
     }
   }
 }
@@ -144,15 +148,15 @@ impl Item {
     format!("/home/runner/mudnix/items/{}.json", item_type)
   }
 
-  pub fn new(item_type: &str, name: &str, description: &str, rarity: &str) -> Self {
-    Self {
-      t: String::from(item_type),
-      qty: 1,
-      name: String::from(name),
-      description: String::from(description),
-      rarity: String::from(rarity)
-    }
-  }
+  // pub fn new(item_type: &str, name: &str, description: &str, rarity: &str) -> Self {
+  //   Self {
+  //     t: String::from(item_type),
+  //     qty: 1,
+  //     name: String::from(name),
+  //     description: String::from(description),
+  //     rarity: String::from(rarity)
+  //   }
+  // }
 
   pub fn from_file(file_path: &str) -> Result<Self, io::Error> {
     let original_json = match fs::read_to_string(file_path) {

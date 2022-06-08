@@ -18,9 +18,7 @@
         "name": "northern_region",
         "t": "field",
         "neighbors": [],
-        "active_users": [
-          "k"
-        ],
+        "active_users": [],
         "npcs": []
       },
       {
@@ -43,9 +41,7 @@
         "name": "western_region",
         "t": "field",
         "neighbors": [],
-        "active_users": [
-          "Skeletor"
-        ],
+        "active_users": [],
         "npcs": []
       }
     ]
