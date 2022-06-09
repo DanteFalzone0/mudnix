@@ -18,7 +18,9 @@
         "name": "northern_region",
         "t": "field",
         "neighbors": [],
-        "active_users": [],
+        "active_users": [
+          "dante_falzone"
+        ],
         "npcs": []
       },
       {

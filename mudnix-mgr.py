@@ -22,9 +22,26 @@ class UsersFile:
       out_file.close()
 
 
+def print_user(user):
+  creation_time = datetime.utcfromtimestamp(
+    user['account_creation_timestamp']
+  ).strftime('%Y/%m/%d %H:%M:%S UTC')
+  active_time = datetime.utcfromtimestamp(
+    user['last_activity_timestamp']
+  ).strftime('%Y/%m/%d %H:%M:%S UTC')
+  print(f"User: {user['username']}")
+  print(f"* Account created:\t{creation_time}")
+  print(f"* Last time active:\t{active_time}")
+  print(f"* Current location:\t{user['world_location']}")
+
+
 def main(argv):
   users_file = UsersFile("users.json")
-  if "--userdel" in argv:
+  if argv[1] == "--list":
+    users_file.load()
+    for user in users_file.data["users"]:
+      print_user(user)
+  elif "--userdel" in argv:
     users_file.load()
     users_to_delete = argv[argv.index("--userdel")+1:]
     users_file.data["users"] = [
@@ -39,16 +56,7 @@ def main(argv):
     for user in filter(
       lambda u: u["username"] in users_to_print, users_file.data["users"]
     ):
-      creation_time = datetime.utcfromtimestamp(
-        user['account_creation_timestamp']
-      ).strftime('%Y/%m/%d %H:%M:%S UTC')
-      active_time = datetime.utcfromtimestamp(
-        user['last_activity_timestamp']
-      ).strftime('%Y/%m/%d %H:%M:%S UTC')
-      print(f"User: {user['username']}")
-      print(f"* Account created:\t{creation_time}")
-      print(f"* Last time active:\t{active_time}")
-      print(f"* Current location:\t{user['world_location']}")
+      print_user(user)
 
 
 if __name__ == "__main__":
