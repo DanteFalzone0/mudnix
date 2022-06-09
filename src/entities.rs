@@ -57,6 +57,13 @@ impl User {
       account_creation_timestamp: now
     }
   }
+
+  pub fn has_been_logged_in_30_mins(&self) -> bool {
+    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)
+      .unwrap().as_secs();
+
+    now - self.last_activity_timestamp >= 1800_u64
+  }
 }
 
 #[derive(Serialize, Deserialize)]

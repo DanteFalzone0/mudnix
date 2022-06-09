@@ -594,6 +594,42 @@ fn get_messages(
   }
 }
 
+#[get("/autologout?<username>&<password>")]
+fn autologout(
+  username: &str,
+  password: &str,
+  users_file_path_mutex: &State<UsersFileMutex>
+) -> EventStream![] {
+  let users_file_path: &str = &users_file_path_mutex.mutex
+    .lock().unwrap().to_string();
+
+  // we make this copy so we don't have to put the borrow inside the EventStream
+  let username_copy = String::from(username);
+
+  let password_hash = hash(password);
+
+  // we copy the file path here, but it's fine because we are only reading the file, not writing it
+  let users_file_path_copy: String = String::from(users_file_path);
+
+  // run every 10 minutes
+  let mut interval = time::interval(Duration::from_secs(600));
+
+  EventStream! {
+    loop {
+      interval.tick().await;
+      let fresh_user_list = entities::UserList::from_file(&users_file_path_copy);
+      let i = fresh_user_list.get_index_if_valid_creds(&username_copy, &password_hash).unwrap();
+      if fresh_user_list.users[i].has_been_logged_in_30_mins() {
+        yield Event::data(serde_json::json!({
+          "username": username_copy,
+          "succeeded": true,
+          "info": "logout"
+        }).to_string());
+      }
+    }
+  }
+}
+
 #[launch]
 fn rocket() -> _ {
   rocket::build()
@@ -618,5 +654,6 @@ fn rocket() -> _ {
     .mount("/user", routes![inventory])
     .mount("/game", routes![say])
     .mount("/game", routes![get_messages])
+    .mount("/user", routes![autologout])
     .mount("/", FileServer::from("/home/runner/mudnix/static"))
 }
