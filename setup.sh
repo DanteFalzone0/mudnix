@@ -11,4 +11,8 @@ function gitsync {
   git push "https://$GITHUB_TOKEN@github.com/DanteFalzone0/mudnix.git" main
 }
 
+function mgr {
+  ./mudnix-mgr.py "$@"
+}
+
 echo "Finished setup."
