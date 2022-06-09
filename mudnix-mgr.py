@@ -43,7 +43,7 @@ def main(argv):
       print_user(user)
   elif argv[1] == "--userdel":
     users_file.load()
-    users_to_delete = argv[argv.index("--userdel")+1:]
+    users_to_delete = argv[2:]
     users_file.data["users"] = [
       user for user in users_file.data["users"] if (
         user["username"] not in users_to_delete
@@ -52,7 +52,7 @@ def main(argv):
     users_file.save()
   elif argv[1] == "--userinfo":
     users_file.load()
-    users_to_print = argv[argv.index("--userinfo")+1:]
+    users_to_print = argv[2:]
     for user in filter(
       lambda u: u["username"] in users_to_print, users_file.data["users"]
     ):
