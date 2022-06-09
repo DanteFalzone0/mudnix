@@ -526,13 +526,15 @@ fn say(
      Otherwise it would be trivial to write a script to spam people with messages. */
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let user_list = entities::UserList::from_file(users_file_path);
+  let mut user_list = entities::UserList::from_file(users_file_path);
   let password_hash = hash(password);
   if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
     let mut message_queue = message::MessageQueue::new("/home/runner/mudnix/message_queue");
     message_queue.send_message(message::Message::new(
       message, username, &user_list.users[i].world_location
     ));
+    user_list.update_timestamp_of_index(i);
+    user_list.save_to_file(users_file_path);
     "Ok"
   } else {
     "Denied"
