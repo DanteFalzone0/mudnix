@@ -25,19 +25,28 @@ class UsersFile:
 def print_user(user):
   creation_time = datetime.utcfromtimestamp(
     user['account_creation_timestamp']
-  ).strftime('%Y/%m/%d %H:%M:%S UTC')
+  ).strftime('%Y-%m-%d %H:%M:%S UTC')
   active_time = datetime.utcfromtimestamp(
     user['last_activity_timestamp']
-  ).strftime('%Y/%m/%d %H:%M:%S UTC')
+  ).strftime('%Y-%m-%d %H:%M:%S UTC')
   print(f"User: {user['username']}")
   print(f"* Account created:\t{creation_time}")
   print(f"* Last time active:\t{active_time}")
-  print(f"* Current location:\t{user['world_location']}")
+  print(f"* Current location:\t{user['world_location']}\n")
+
+
+def print_current_time():
+  print(
+    "Current time: "
+    + datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
+    + "\n"
+  )
 
 
 def main(argv):
   users_file = UsersFile("users.json")
   if argv[1] == "--list":
+    print_current_time()
     users_file.load()
     for user in users_file.data["users"]:
       print_user(user)
@@ -51,6 +60,7 @@ def main(argv):
     ]
     users_file.save()
   elif argv[1] == "--userinfo":
+    print_current_time()
     users_file.load()
     users_to_print = argv[2:]
     for user in filter(
