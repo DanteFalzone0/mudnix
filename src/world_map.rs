@@ -126,6 +126,17 @@ impl WorldLocation {
       Err(io::Error::new(io::ErrorKind::InvalidInput, "sublocation does not exist"))
     }
   }
+
+  pub fn get_users_from_sublocation(
+    &self,
+    sublocation_id: &str
+  ) -> Result<Vec<String>, io::Error> {
+    let i = match self.sublocation_index(sublocation_id) {
+      Ok(i) => i,
+      Err(e) => return Err(e)
+    };
+    Ok(self.attrs.sublocations[i].active_users.clone())
+  }
 }
 
 pub fn get_path_from_location_id(location_id: &str) -> String {

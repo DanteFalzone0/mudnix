@@ -632,6 +632,53 @@ fn autologout(
   }
 }
 
+#[get("/whos-here?<username>&<password>")]
+fn whos_here(
+  username: &str,
+  password: &str,
+  users_file_path_mutex: &State<UsersFileMutex>
+) -> content::Json<String> {
+  let users_file_path: &str = &users_file_path_mutex.mutex
+    .lock().unwrap().to_string();
+  let mut user_list = entities::UserList::from_file(users_file_path);
+  let password_hash = hash(password);
+  if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
+    let location_id = user_list.users[i].world_location.clone();
+    let location = match world_map::WorldLocation::from_location_id(&location_id) {
+      Ok(location) => location,
+      Err(_) => return error_response(
+        username,
+        &format!(
+          "you are currently located at invalid location \"{}\"",
+          location_id
+        )
+      )
+    };
+
+    let subloc = world_map::get_sublocation_from_id(&location_id).unwrap();
+    let nearby_users: Vec<String> = match location.get_users_from_sublocation(&subloc) {
+      Ok(users) => users,
+      Err(_) => return error_response(
+        username,
+        &format!(
+          "unable to get users at invalid location \"{}\"",
+          location_id
+        )
+      )
+    };
+    user_list.update_timestamp_of_index(i);
+    user_list.save_to_file(users_file_path);
+    content::Json(serde_json::json!({
+      "username": username,
+      "succeeded": true,
+      "active_location": location_id,
+      "nearby_users": nearby_users
+    }).to_string())
+  } else {
+    error_response(username, "invalid credentials")
+  }
+}
+
 #[launch]
 fn rocket() -> _ {
   rocket::build()
@@ -657,5 +704,6 @@ fn rocket() -> _ {
     .mount("/game", routes![say])
     .mount("/game", routes![get_messages])
     .mount("/user", routes![autologout])
+    .mount("/game", routes![whos_here])
     .mount("/", FileServer::from("/home/runner/mudnix/static"))
 }
