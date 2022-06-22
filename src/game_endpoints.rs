@@ -1,5 +1,7 @@
-/* API endpoints for things that happen in the game, or game actions
-   that a user may take. */
+/**
+ * API endpoints for things that happen in the game, or game actions
+ * that a user may take.
+ */
 use crate::rand::Rng;
 use rocket::State;
 use rocket::response::content;
