@@ -16,6 +16,7 @@ use serde_json;
 
 use crate::entities::ItemContainer;
 mod entities;
+mod user;
 mod world_map;
 mod mudnix_utils;
 mod message;
@@ -57,7 +58,7 @@ impl Fairing for CORS {
 type UsersFileMutex = mudnix_utils::FilePathMutex;
 
 struct LoggedInUserPool {
-  pub user_list_mutex: Mutex<entities::UserList>
+  pub user_list_mutex: Mutex<user::UserList>
 }
 
 #[get("/version")]
@@ -86,13 +87,13 @@ fn new_user(
 ) -> String {
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let mut user_list = entities::UserList::from_file(users_file_path);
+  let mut user_list = user::UserList::from_file(users_file_path);
 
   if user_list.contains(username) {
     format!("User {} already exists.", username)
   } else {
     let password_hash = hash(password);
-    let user = entities::User::new(
+    let user = user::User::new(
       username,
       &password_hash,
       "Quux_Plains::northern_region"
@@ -116,7 +117,7 @@ fn login(
 ) -> content::Json<String> {
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let mut user_list = entities::UserList::from_file(users_file_path);
+  let mut user_list = user::UserList::from_file(users_file_path);
 
   let password_hash = hash(password);
 
@@ -188,7 +189,7 @@ fn logout(
 ) -> content::Json<String> {
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let mut user_list = entities::UserList::from_file(users_file_path);
+  let mut user_list = user::UserList::from_file(users_file_path);
 
   let password_hash = hash(password);
 
@@ -245,7 +246,7 @@ fn move_user(
   password_hash: &str,
   new_location_id: &str,
   users_file_path: &str,
-  user_list: &mut entities::UserList
+  user_list: &mut user::UserList
 ) -> content::Json<String> {
   if let Some(i) = user_list.get_index_if_valid_creds(username, password_hash) {
     let old_location_id: &str = &user_list.users[i].world_location;
@@ -289,7 +290,7 @@ fn teleport(
 ) -> content::Json<String> {
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let mut user_list = entities::UserList::from_file(users_file_path);
+  let mut user_list = user::UserList::from_file(users_file_path);
   let correct_hash = "e6fd95a315bb7129a50fd85b20af443d9a4d42c22aaff632c81808b4aee53335";
   if username == "dante_falzone" && hash(password) == correct_hash {
     move_user(username, correct_hash, new_location, users_file_path, &mut user_list)
@@ -307,7 +308,7 @@ fn goto(
 ) -> content::Json<String> {
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let mut user_list = entities::UserList::from_file(users_file_path);
+  let mut user_list = user::UserList::from_file(users_file_path);
   let password_hash = hash(password);
   if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
     let old_location_id: &str = &user_list.users[i].world_location;
@@ -390,7 +391,7 @@ fn map(
 ) -> content::Json<String> {
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let user_list = entities::UserList::from_file(users_file_path);
+  let user_list = user::UserList::from_file(users_file_path);
   let password_hash = hash(password);
   if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
     let old_location_id: &str = &user_list.users[i].world_location;
@@ -453,7 +454,7 @@ fn close_chest(
 ) -> content::Json<String> {
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let mut user_list = entities::UserList::from_file(users_file_path);
+  let mut user_list = user::UserList::from_file(users_file_path);
   let password_hash = hash(password);
   if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
     if let Some(treasure_chest) = user_list.users[i].active_treasure_chest.clone() {
@@ -483,7 +484,7 @@ fn inventory(
 ) -> content::Json<String> {
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let mut user_list = entities::UserList::from_file(users_file_path);
+  let mut user_list = user::UserList::from_file(users_file_path);
   let password_hash = hash(password);
   if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
     user_list.update_timestamp_of_index(i);
@@ -526,7 +527,7 @@ fn say(
      Otherwise it would be trivial to write a script to spam people with messages. */
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let mut user_list = entities::UserList::from_file(users_file_path);
+  let mut user_list = user::UserList::from_file(users_file_path);
   let password_hash = hash(password);
   if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
     let mut message_queue = message::MessageQueue::new("/home/runner/mudnix/message_queue");
@@ -549,7 +550,7 @@ fn get_messages(
 ) -> EventStream![] {
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let starting_user_list = entities::UserList::from_file(users_file_path);
+  let starting_user_list = user::UserList::from_file(users_file_path);
 
   // we make this copy so we don't have to put the borrow inside the EventStream
   let username_copy = String::from(username);
@@ -572,7 +573,7 @@ fn get_messages(
   EventStream! {
     if starting_world_location != "invalid" {
       loop {
-        let fresh_user_list = entities::UserList::from_file(&users_file_path_copy);
+        let fresh_user_list = user::UserList::from_file(&users_file_path_copy);
         let i = fresh_user_list.get_index_if_valid_creds(&username_copy, &password_hash).unwrap();
         let current_location = fresh_user_list.users[i].world_location.clone();
         interval.tick().await;
@@ -619,7 +620,7 @@ fn autologout(
   EventStream! {
     loop {
       interval.tick().await;
-      let fresh_user_list = entities::UserList::from_file(&users_file_path_copy);
+      let fresh_user_list = user::UserList::from_file(&users_file_path_copy);
       let i = fresh_user_list.get_index_if_valid_creds(&username_copy, &password_hash).unwrap();
       if fresh_user_list.users[i].has_been_logged_in_30_mins() {
         yield Event::data(serde_json::json!({
@@ -640,7 +641,7 @@ fn whos_here(
 ) -> content::Json<String> {
   let users_file_path: &str = &users_file_path_mutex.mutex
     .lock().unwrap().to_string();
-  let mut user_list = entities::UserList::from_file(users_file_path);
+  let mut user_list = user::UserList::from_file(users_file_path);
   let password_hash = hash(password);
   if let Some(i) = user_list.get_index_if_valid_creds(username, &password_hash) {
     let location_id = user_list.users[i].world_location.clone();
@@ -686,7 +687,7 @@ fn rocket() -> _ {
       mutex: Mutex::new(String::from("/home/runner/mudnix/users.json"))
     })
     .manage(LoggedInUserPool {
-      user_list_mutex: Mutex::new(entities::UserList::new())
+      user_list_mutex: Mutex::new(user::UserList::new())
     })
     .attach(CORS)
     .mount("/", routes![mudnix])

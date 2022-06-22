@@ -45,7 +45,12 @@ def print_current_time():
 
 def main(argv):
   users_file = UsersFile("users.json")
-  if argv[1] == "--list":
+  if len(argv) < 2:
+    print(
+      f"usage: {argv[0]} "
+      "{ --list | (--userdel | --userinfo) <users>... }"
+    )
+  elif argv[1] == "--list":
     print_current_time()
     users_file.load()
     for user in users_file.data["users"]:
